@@ -244,9 +244,6 @@ val downloadFacebookMedia573Patch = bytecodePatch(
         )
         storyDotsCallSites.asReversed().forEach { (storyDotsCall, dotsAddIndex) ->
             val dotsCallRegisters = storyHeaderInstructions[storyDotsCall] as FiveRegisterInstruction
-            require(dotsCallRegisters.registerCount == 2) {
-                "Expected the Story header dots builder to receive C3QZ and theme boolean"
-            }
             val dotsResultRegister =
                 (storyHeaderInstructions[storyDotsCall + 1] as OneRegisterInstruction).registerA
             val dotsAddRegisters = storyHeaderInstructions[dotsAddIndex] as FiveRegisterInstruction
@@ -1275,12 +1272,13 @@ val downloadFacebookMedia573Patch = bytecodePatch(
                 ImmutableMethodParameter("LX/3QZ;", null, null),
                 ImmutableMethodParameter("LX/4ta;", null, null),
                 ImmutableMethodParameter("LX/BsO;", null, null),
+                ImmutableMethodParameter("LX/4ia;", null, null),
             ),
             "LX/3Pu;",
             AccessFlags.PUBLIC.value or AccessFlags.STATIC.value,
             null,
             null,
-            MutableMethodImplementation(25),
+            MutableMethodImplementation(16),
         ).toMutable().apply {
             addInstructions(
                 0,
@@ -1292,40 +1290,44 @@ val downloadFacebookMedia573Patch = bytecodePatch(
                     move-object/from16 v4, p3
                     invoke-direct {v0, v1, v2, v3, v4}, LX/WKI;-><init>(ILjava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;)V
 
-                    new-instance v1, LX/2vk;
-                    const-string v2, "Download"
-                    move-object v3, v0
-                    invoke-direct {v1, v2, v3}, LX/2vk;-><init>(Ljava/lang/String;Lkotlin/jvm/functions/Function1;)V
+                    new-instance v1, LX/WKI;
+                    const/16 v2, 0x81
+                    move-object/from16 v3, p1
+                    move-object/from16 v4, p2
+                    move-object/from16 v5, p3
+                    invoke-direct {v1, v2, v3, v4, v5}, LX/WKI;-><init>(ILjava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;)V
 
-                    new-instance v2, LX/WKI;
-                    const/16 v3, 0x81
-                    move-object/from16 v4, p1
-                    move-object/from16 v5, p2
-                    move-object/from16 v6, p3
-                    invoke-direct {v2, v3, v4, v5, v6}, LX/WKI;-><init>(ILjava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;)V
+                    new-instance v2, LX/2vk;
+                    const-string v3, "Download"
+                    move-object v4, v0
+                    invoke-direct {v2, v3, v4}, LX/2vk;-><init>(Ljava/lang/String;Lkotlin/jvm/functions/Function1;)V
 
                     new-instance v3, LX/2QZ;
                     const-string v4, "Download"
-                    move-object v5, v2
+                    move-object v5, v1
                     invoke-direct {v3, v4, v5}, LX/2QZ;-><init>(Ljava/lang/String;Lkotlin/jvm/functions/Function1;)V
 
-                    new-instance v4, LX/9yX;
-                    sget-object v5, LX/1Vq;->A80:LX/1Vq;
-                    invoke-direct {v4, v5}, LX/9yX;-><init>(LX/1Vq;)V
+                    new-instance v4, LX/2QZ;
+                    const-string v5, "Download"
+                    move-object v6, v1
+                    invoke-direct {v4, v5, v6}, LX/2QZ;-><init>(Ljava/lang/String;Lkotlin/jvm/functions/Function1;)V
+
+                    new-instance v5, LX/9yX;
+                    sget-object v6, LX/1Vq;->A80:LX/1Vq;
+                    invoke-direct {v5, v6}, LX/9yX;-><init>(LX/1Vq;)V
 
                     move-object/from16 v6, p0
                     sget-object v7, LX/1c6;->A02:LX/1c6;
-                    move-object v8, v1
+                    move-object v8, v2
                     move-object v9, v3
-                    const/4 v10, 0x0
-                    move-object v11, v4
+                    move-object v10, v4
+                    move-object v11, v5
                     sget-object v12, Ljava/lang/Boolean;->FALSE:Ljava/lang/Boolean;
                     sget-object v13, Ljava/lang/Boolean;->TRUE:Ljava/lang/Boolean;
                     const-string v14, "download_button"
                     const/4 v15, 0x0
-                    const-string v0, "Download"
-                    move-object/from16 v16, v0
-                    const/16 v17, 0x0
+                    const-string v16, "Download"
+                    move-object/from16 v17, v0
                     const/16 v18, 0x0
                     const/16 v19, 0x0
                     const/16 v20, 0x0
@@ -1363,7 +1365,8 @@ val downloadFacebookMedia573Patch = bytecodePatch(
                 move-object/from16 v1, v14
                 move-object/from16 v2, v37
                 move-object/from16 v3, v94
-                invoke-static {v0, v1, v2, v3}, LX/9vm;->froggoCreateReelDownloadAction(Lcom/facebook/auth/usersession/FbUserSession;LX/3QZ;LX/4ta;LX/BsO;)LX/3Pu;
+                move-object/from16 v4, v36
+                invoke-static {v0, v1, v2, v3, v4}, LX/9vm;->froggoCreateReelDownloadAction(Lcom/facebook/auth/usersession/FbUserSession;LX/3QZ;LX/4ta;LX/BsO;LX/4ia;)LX/3Pu;
                 move-result-object v0
                 move-object/from16 v1, v33
                 invoke-virtual {v1, v0}, Ljava/util/AbstractCollection;->add(Ljava/lang/Object;)Z
