@@ -80,7 +80,7 @@ private val reelSidebar = Fingerprint(
 @Suppress("unused")
 val downloadFacebookMedia573Patch = bytecodePatch(
     name = "Download Facebook Media (573)",
-    description = "Adds direct downloads for Stories, Reels sidebar, and Feed Videos through MediaStore and DownloadManager.",
+    description = "Adds direct media downloads for Stories, Reels sidebar, and Feed Videos.",
     default = true,
 ) {
     compatibleWith(COMPATIBILITY_FACEBOOK_573)
@@ -126,12 +126,8 @@ val downloadFacebookMedia573Patch = bytecodePatch(
                 """
                     invoke-static {p0}, LX/4hG;->A00(LX/3QZ;)LX/4hH;
                     move-result-object v0
-                    const-string v6, "FroggoPatches"
-                    const-string v7, "story-button-built"
-                    invoke-static {v6, v7}, Landroid/util/Log;->d(Ljava/lang/String;Ljava/lang/String;)I
                     const/high16 v1, 0x41c00000
                     invoke-virtual {v0, v1}, LX/4hH;->A1j(F)V
-                    const/high16 v1, 0x41c00000
                     invoke-virtual {v0, v1}, LX/4hH;->A1X(F)V
                     const/4 v1, 0x0
                     invoke-virtual {v0, v1}, LX/4hH;->A1W(F)V
@@ -180,12 +176,8 @@ val downloadFacebookMedia573Patch = bytecodePatch(
                 instance-of v1, v5, LX/1MP;
                 if-eqz v1, :froggo_story_header_touch_done
                 check-cast v5, LX/1MP;
-                invoke-virtual {5}, LX/1MP;->A00()Landroid/view/View;
+                invoke-virtual {v5}, LX/1MP;->A00()Landroid/view/View;
                 move-result-object v5
-                :froggo_story_header_start
-                const-string v2, "FroggoPatches"
-                const-string v3, "story-action-callback"
-                invoke-static {v2, v3}, Landroid/util/Log;->d(Ljava/lang/String;Ljava/lang/String;)I
                 iget-object v0, v4, LX/X6V;->A00:LX/1K9;
                 iget-object v0, v0, LX/1K9;->A00:LX/3QZ;
                 invoke-static {v0}, LX/41t;->A0O(LX/3QZ;)Ljava/lang/Object;
@@ -207,8 +199,8 @@ val downloadFacebookMedia573Patch = bytecodePatch(
             val reference = (instruction as? ReferenceInstruction)?.reference as? MethodReference
             if (
                 reference?.definingClass == storyHeader.classDef.type &&
-                    reference.name == "A00" &&
-                    reference.parameterTypes == listOf("LX/3QZ;", "Z")
+                reference.name == "A00" &&
+                reference.parameterTypes == listOf("LX/3QZ;", "Z")
             ) {
                 index
             } else {
@@ -283,7 +275,7 @@ val downloadFacebookMedia573Patch = bytecodePatch(
             val reference = (instruction as? ReferenceInstruction)?.reference as? MethodReference
             if (
                 reference?.definingClass == "LX/Nqo;" &&
-                    reference.name == "A0x"
+                reference.name == "A0x"
             ) {
                 index
             } else {
@@ -300,7 +292,6 @@ val downloadFacebookMedia573Patch = bytecodePatch(
                 move-result-object v0
                 const/high16 v1, 0x41c00000
                 invoke-virtual {v0, v1}, LX/4hH;->A1j(F)V
-                const/high16 v1, 0x41c00000
                 invoke-virtual {v0, v1}, LX/4hH;->A1X(F)V
                 const/4 v1, 0x0
                 invoke-virtual {v0, v1}, LX/4hH;->A1W(F)V
@@ -382,13 +373,13 @@ val downloadFacebookMedia573Patch = bytecodePatch(
             val reference = (instruction as? ReferenceInstruction)?.reference as? MethodReference
             if (
                 reference?.definingClass == "LX/An8;" &&
-                    reference.name == "<init>" &&
-                    reference.parameterTypes == listOf(
-                        "Lcom/facebook/auth/usersession/FbUserSession;",
-                        "LX/FlR;",
-                        "Lcom/facebook/stories/model/StoryBucket;",
-                        "LX/BsZ;",
-                    )
+                reference.name == "<init>" &&
+                reference.parameterTypes == listOf(
+                    "Lcom/facebook/auth/usersession/FbUserSession;",
+                    "LX/FlR;",
+                    "Lcom/facebook/stories/model/StoryBucket;",
+                    "LX/BsZ;",
+                )
             ) {
                 index
             } else {
@@ -614,9 +605,6 @@ val downloadFacebookMedia573Patch = bytecodePatch(
                     move-result-object v2
                     const-string v1, "FroggoButtonView"
                     invoke-static {v1, v2}, Landroid/util/Log;->d(Ljava/lang/String;Ljava/lang/String;)I
-                    const-string v1, "FroggoPatches"
-                    const-string v2, "feedback-button-captured"
-                    invoke-static {v1, v2}, Landroid/util/Log;->d(Ljava/lang/String;Ljava/lang/String;)I
 
                     :froggo_capture_button_done
                     return-void
@@ -684,9 +672,6 @@ val downloadFacebookMedia573Patch = bytecodePatch(
                     invoke-virtual {v2, v1}, Landroid/view/ViewGroupOverlay;->add(Landroid/view/View;)V
                     sput-object v1, LX/WKI;->froggoDownloadSpinner:Landroid/widget/ProgressBar;
                     :froggo_feedback_start_no_spinner_host
-                    const-string v1, "FroggoPatches"
-                    const-string v2, "feedback-spinner-start"
-                    invoke-static {v1, v2}, Landroid/util/Log;->d(Ljava/lang/String;Ljava/lang/String;)I
                     goto :froggo_feedback_start_done
 
                     :froggo_feedback_start_no_view
@@ -1087,17 +1072,13 @@ val downloadFacebookMedia573Patch = bytecodePatch(
                     const/16 v2, 0x10
                     invoke-virtual {v0, v2}, Landroid/view/View;->performHapticFeedback(I)Z
                     const v2, 0xff4caf50
-                    const-string v3, "feedback-button-success"
                     goto :froggo_download_result_style_ready
                     :froggo_download_result_failure
                     const v2, 0xfff44336
-                    const-string v3, "feedback-button-failure"
                     :froggo_download_result_style_ready
                     invoke-static {v2}, Landroid/content/res/ColorStateList;->valueOf(I)Landroid/content/res/ColorStateList;
                     move-result-object v2
                     invoke-virtual {v0, v2}, Landroid/view/View;->setBackgroundTintList(Landroid/content/res/ColorStateList;)V
-                    const-string v2, "FroggoPatches"
-                    invoke-static {v2, v3}, Landroid/util/Log;->d(Ljava/lang/String;Ljava/lang/String;)I
 
                     new-instance v2, Landroid/view/animation/AlphaAnimation;
                     const v3, 0x3e99999a
@@ -1149,9 +1130,6 @@ val downloadFacebookMedia573Patch = bytecodePatch(
                     const/4 v1, 0x0
                     sput-object v1, LX/WKI;->froggoDownloadButton:Landroid/view/View;
                     sput-object v1, LX/WKI;->froggoDownloadButtonTint:Landroid/content/res/ColorStateList;
-                    const-string v1, "FroggoPatches"
-                    const-string v2, "feedback-button-restored"
-                    invoke-static {v1, v2}, Landroid/util/Log;->d(Ljava/lang/String;Ljava/lang/String;)I
                     goto :froggo_download_dispatch_end
                     :froggo_toast_worker
                     iget-object v0, p0, LX/WKI;->A00:Ljava/lang/Object;
@@ -1206,9 +1184,6 @@ val downloadFacebookMedia573Patch = bytecodePatch(
                     if-eq v0, v1, :froggo_download_invoke_capture_button
                     const/16 v1, 0x81
                     if-ne v0, v1, :froggo_download_invoke_check_fullscreen
-                    const-string v1, "FroggoPatches"
-                    const-string v2, "invoke-start"
-                    invoke-static {v1, v2}, Landroid/util/Log;->d(Ljava/lang/String;Ljava/lang/String;)I
                     invoke-static {p1}, LX/WKI;->froggoShowDownloadFeedbackStart(Ljava/lang/Object;)V
                     new-instance v0, Ljava/lang/Thread;
                     invoke-direct {v0, p0}, Ljava/lang/Thread;-><init>(Ljava/lang/Runnable;)V
@@ -1278,7 +1253,7 @@ val downloadFacebookMedia573Patch = bytecodePatch(
             AccessFlags.PUBLIC.value or AccessFlags.STATIC.value,
             null,
             null,
-            MutableMethodImplementation(25),
+            MutableMethodImplementation(16),
         ).toMutable().apply {
             addInstructions(
                 0,
@@ -1290,48 +1265,40 @@ val downloadFacebookMedia573Patch = bytecodePatch(
                     move-object/from16 v4, p3
                     invoke-direct {v0, v1, v2, v3, v4}, LX/WKI;-><init>(ILjava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;)V
 
-                    new-instance v1, LX/2vk;
-                    const-string v2, "Download"
-                    move-object v3, v0
-                    invoke-direct {v1, v2, v3}, LX/2vk;-><init>(Ljava/lang/String;Lkotlin/jvm/functions/Function1;)V
+                    new-instance v1, LX/WKI;
+                    const/16 v2, 0x81
+                    move-object/from16 v3, p1
+                    move-object/from16 v4, p2
+                    move-object/from16 v5, p3
+                    invoke-direct {v1, v2, v3, v4, v5}, LX/WKI;-><init>(ILjava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;)V
 
-                    new-instance v2, LX/WKI;
-                    const/16 v3, 0x81
-                    move-object/from16 v4, p1
-                    move-object/from16 v5, p2
-                    move-object/from16 v6, p3
-                    invoke-direct {v2, v3, v4, v5, v6}, LX/WKI;-><init>(ILjava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;)V
+                    new-instance v2, LX/2vk;
+                    const-string v3, "Download"
+                    move-object v4, v0
+                    invoke-direct {v2, v3, v4}, LX/2vk;-><init>(Ljava/lang/String;Lkotlin/jvm/functions/Function1;)V
 
                     new-instance v3, LX/2QZ;
                     const-string v4, "Download"
-                    move-object v5, v2
+                    move-object v5, v1
                     invoke-direct {v3, v4, v5}, LX/2QZ;-><init>(Ljava/lang/String;Lkotlin/jvm/functions/Function1;)V
 
                     new-instance v4, LX/9yX;
                     sget-object v5, LX/1Vq;->A80:LX/1Vq;
                     invoke-direct {v4, v5}, LX/9yX;-><init>(LX/1Vq;)V
 
-                    move-object/from16 v6, p0
-                    sget-object v7, LX/1c6;->A02:LX/1c6;
-                    move-object v8, v1
+                    move-object/from16 v5, p0
+                    sget-object v6, LX/1c6;->A02:LX/1c6;
+                    move-object v7, v2
+                    move-object v8, v3
                     move-object v9, v3
-                    const/4 v10, 0x0
-                    move-object v11, v4
-                    sget-object v12, Ljava/lang/Boolean;->FALSE:Ljava/lang/Boolean;
-                    sget-object v13, Ljava/lang/Boolean;->TRUE:Ljava/lang/Boolean;
-                    const-string v14, "download_button"
-                    const/4 v15, 0x0
-                    const-string v0, "Download"
-                    move-object/from16 v16, v0
-                    const/16 v17, 0x0
-                    const/16 v18, 0x0
-                    const/16 v19, 0x0
-                    const/16 v20, 0x0
-                    const/16 v21, 0x11
-                    const/16 v22, 0x1
-                    const/16 v23, 0x0
-                    const/16 v24, 0x0
-                    invoke-static/range {v6 .. v24}, LX/2iZ;->A00(Lcom/facebook/auth/usersession/FbUserSession;LX/1c6;LX/2vk;LX/2QZ;LX/2QZ;LX/C8v;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Object;Ljava/lang/String;Ljava/lang/String;Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function1;IZZZ)LX/9yY;
+                    move-object v10, v4
+                    sget-object v11, Ljava/lang/Boolean;->FALSE:Ljava/lang/Boolean;
+                    sget-object v12, Ljava/lang/Boolean;->TRUE:Ljava/lang/Boolean;
+                    const-string v13, "download_button"
+                    const/4 v14, 0x0
+                    const-string v15, "Download"
+
+                    invoke-static/range {v5 .. v15}, LX/2iZ;->A00(Lcom/facebook/auth/usersession/FbUserSession;LX/1c6;LX/2vk;LX/2QZ;LX/2QZ;LX/C8v;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Object;Ljava/lang/String;Ljava/lang/String;)LX/9yY;
                     move-result-object v0
                     return-object v0
                 """.trimIndent(),
@@ -1343,8 +1310,8 @@ val downloadFacebookMedia573Patch = bytecodePatch(
             val reference = (instruction as? ReferenceInstruction)?.reference as? MethodReference
             if (
                 reference?.definingClass == "LX/9yh;" &&
-                    reference.name == "A01" &&
-                    reference.parameterTypes.size == 17
+                reference.name == "A01" &&
+                reference.parameterTypes.size == 17
             ) {
                 index
             } else {
