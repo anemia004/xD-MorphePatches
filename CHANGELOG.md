@@ -1,3 +1,9 @@
+## [1.0.1](https://github.com/anemia004/xD-MorphePatches/compare/v1.0.0...v1.0.1) (2026-09-13)
+
+### 🐛 Bug Fixes
+
+* restore complete 5-parameter reel sidebar action builder and UI injection ([8e001c0](https://github.com/anemia004/xD-MorphePatches/commit/8e001c02f548160f063d5e183e5fe06c0dde38fd))
+
 ## 1.0.0 (2026-09-13)
 
 ### 🐛 Bug Fixes
