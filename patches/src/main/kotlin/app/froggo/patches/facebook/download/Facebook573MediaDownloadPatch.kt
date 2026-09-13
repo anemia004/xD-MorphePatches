@@ -9,11 +9,19 @@ import app.morphe.patcher.util.proxy.mutableTypes.MutableField.Companion.toMutab
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod.Companion.toMutable
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.HiddenApiRestriction
+import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.builder.MutableMethodImplementation
+import com.android.tools.smali.dexlib2.builder.instruction.BuilderInstruction11x
+import com.android.tools.smali.dexlib2.builder.instruction.BuilderInstruction35c
 import com.android.tools.smali.dexlib2.iface.Annotation
+import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
+import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 import com.android.tools.smali.dexlib2.immutable.ImmutableField
 import com.android.tools.smali.dexlib2.immutable.ImmutableMethod
 import com.android.tools.smali.dexlib2.immutable.ImmutableMethodParameter
+import com.android.tools.smali.dexlib2.immutable.reference.ImmutableMethodReference
 
 private val NO_ANNOTATIONS: Set<Annotation> = emptySet()
 private val NO_HIDDEN_API: Set<HiddenApiRestriction> = emptySet()
@@ -81,11 +89,9 @@ val downloadFacebookMedia573Patch = bytecodePatch(
         val videoPathPrefix = videoFolderOption.value!!
         val storyDirectActionHash = -2013570421
 
-        // Fingerprints auto-resolve; use .classDef / .method directly.
         val menuClass = menuCallback.classDef
         val videoClass = videoSaveCallback.classDef
         val headerClass = storyHeader.classDef
-        // storyHeaderCallback.classDef reserved for parity but not used here.
 
         // -------------------------------------------------------------------
         // Story header: create a download button wired to the action hash.
@@ -148,7 +154,78 @@ val downloadFacebookMedia573Patch = bytecodePatch(
         headerClass.methods.add(storyDirectButtonHelper)
 
         // -------------------------------------------------------------------
-        // Story header callback — low-register only.
+        // Inject the download button into BOTH Story header dots layouts.
+        // -------------------------------------------------------------------
+        val storyHeaderInstructions = storyHeader.method.implementation!!.instructions
+        val storyDotsCalls = storyHeaderInstructions.withIndex().mapNotNull { (index, instruction) ->
+            val reference = (instruction as? ReferenceInstruction)?.reference as? MethodReference
+            if (
+                reference?.definingClass == headerClass.type &&
+                    reference.name == "A00" &&
+                    reference.parameterTypes == listOf("LX/3QZ;", "Z")
+            ) index else null
+        }
+        val storyDotsCallSites = storyDotsCalls.mapNotNull { callIndex ->
+            val dotsResultRegister =
+                (storyHeaderInstructions.getOrNull(callIndex + 1) as? OneRegisterInstruction)?.registerA
+                    ?: return@mapNotNull null
+            fun isDotsCollectionAdd(index: Int): Boolean {
+                val instruction = storyHeaderInstructions[index]
+                val reference = (instruction as? ReferenceInstruction)?.reference as? MethodReference
+                return reference?.definingClass == "Ljava/util/AbstractCollection;" &&
+                    reference.name == "add" &&
+                    reference.parameterTypes == listOf("Ljava/lang/Object;") &&
+                    (instruction as? FiveRegisterInstruction)?.registerCount == 2 &&
+                    (instruction as FiveRegisterInstruction).registerD == dotsResultRegister
+            }
+            val addIndex =
+                (callIndex + 1 until minOf(callIndex + 96, storyHeaderInstructions.size))
+                    .firstOrNull(::isDotsCollectionAdd)
+                    ?: (0 until callIndex).reversed().firstOrNull(::isDotsCollectionAdd)
+            if (addIndex == null) null else callIndex to addIndex
+        }
+        require(storyDotsCallSites.size == 2) {
+            "Expected both Story header dots layouts to add their button to a collection (found ${storyDotsCallSites.size})"
+        }
+        val directButtonReference = ImmutableMethodReference(
+            headerClass.type,
+            "froggoCreateStoryDownloadButton",
+            listOf("LX/3QZ;", "Z"),
+            "LX/4hG;",
+        )
+        storyDotsCallSites.asReversed().forEach { (storyDotsCall, dotsAddIndex) ->
+            val dotsCallRegisters = storyHeaderInstructions[storyDotsCall] as FiveRegisterInstruction
+            val dotsResultRegister =
+                (storyHeaderInstructions[storyDotsCall + 1] as OneRegisterInstruction).registerA
+            val dotsAddRegisters = storyHeaderInstructions[dotsAddIndex] as FiveRegisterInstruction
+            val storyHeaderAddReference =
+                (storyHeaderInstructions[dotsAddIndex] as ReferenceInstruction).reference
+            storyHeader.method.addInstructions(
+                dotsAddIndex + 1,
+                listOf(
+                    BuilderInstruction35c(
+                        Opcode.INVOKE_STATIC,
+                        dotsCallRegisters.registerCount,
+                        dotsCallRegisters.registerC,
+                        dotsCallRegisters.registerD,
+                        0, 0, 0,
+                        directButtonReference,
+                    ),
+                    BuilderInstruction11x(Opcode.MOVE_RESULT_OBJECT, dotsResultRegister),
+                    BuilderInstruction35c(
+                        Opcode.INVOKE_VIRTUAL,
+                        2,
+                        dotsAddRegisters.registerC,
+                        dotsResultRegister,
+                        0, 0, 0,
+                        storyHeaderAddReference,
+                    ),
+                ),
+            )
+        }
+
+        // -------------------------------------------------------------------
+        // Story header callback — guarded, low-register only.
         // -------------------------------------------------------------------
         storyHeaderCallback.method.addInstructions(
             0,
@@ -166,11 +243,15 @@ val downloadFacebookMedia573Patch = bytecodePatch(
                 move-result-object v0
 
                 iget-object v1, p1, LX/X6V;->A00:LX/1K9;
+                if-eqz v1, :froggo_story_header_touch_done
                 iget-object v1, v1, LX/1K9;->A00:LX/3QZ;
+                if-eqz v1, :froggo_story_header_touch_done
                 invoke-static {v1}, LX/41t;->A0O(LX/3QZ;)Ljava/lang/Object;
                 move-result-object v1
+                if-eqz v1, :froggo_story_header_touch_done
                 check-cast v1, LX/9VC;
                 iget-object v1, v1, LX/9VC;->A00:Lcom/facebook/stories/viewer/ui/buckets/regular/topbar/menu/StoryViewerMoreButtonCallback;
+                if-eqz v1, :froggo_story_header_touch_done
                 invoke-static {v1, v0}, LX/WKI;->froggoChooseStoryDownload(Lcom/facebook/stories/viewer/ui/buckets/regular/topbar/menu/StoryViewerMoreButtonCallback;Landroid/view/View;)V
                 const/4 v0, 0x0
                 return-object v0
@@ -231,7 +312,7 @@ val downloadFacebookMedia573Patch = bytecodePatch(
         )
 
         // -------------------------------------------------------------------
-        // Static DownloadManager helper methods on LX/WKI.
+        // DownloadManager helpers on LX/WKI.
         // -------------------------------------------------------------------
         val enqueueHelper = ImmutableMethod(
             callbackClass.type, "froggoEnqueue",
