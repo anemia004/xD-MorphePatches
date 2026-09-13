@@ -180,7 +180,7 @@ val downloadFacebookMedia573Patch = bytecodePatch(
                 instance-of v1, v5, LX/1MP;
                 if-eqz v1, :froggo_story_header_touch_done
                 check-cast v5, LX/1MP;
-                invoke-virtual {v5}, LX/1MP;->A00()Landroid/view/View;
+                invoke-virtual {5}, LX/1MP;->A00()Landroid/view/View;
                 move-result-object v5
                 :froggo_story_header_start
                 const-string v2, "FroggoPatches"
