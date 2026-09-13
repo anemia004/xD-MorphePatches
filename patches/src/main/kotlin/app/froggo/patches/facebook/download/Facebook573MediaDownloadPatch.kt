@@ -811,6 +811,52 @@ val downloadFacebookMedia573Patch = bytecodePatch(
         }
         callbackClass.methods.add(workerMethod)
 
+        val callbackInvokeMethod = ImmutableMethod(
+            callbackClass.type,
+            "invoke",
+            listOf(ImmutableMethodParameter("Ljava/lang/Object;", null, null)),
+            "Ljava/lang/Object;",
+            AccessFlags.PUBLIC.value,
+            null,
+            null,
+            MutableMethodImplementation(8),
+        ).toMutable().apply {
+            addInstructions(
+                0,
+                """
+                    iget v0, p0, LX/WKI;->${'$'}t:I
+                    const/16 v1, 0x80
+                    if-eq v0, v1, :froggo_download_invoke_capture_button
+                    const/16 v1, 0x81
+                    if-ne v0, v1, :froggo_download_invoke_check_fullscreen
+                    invoke-static {p1}, LX/WKI;->froggoShowDownloadFeedbackStart(Ljava/lang/Object;)V
+                    new-instance v0, Ljava/lang/Thread;
+                    invoke-direct {v0, p0}, Ljava/lang/Thread;-><init>(Ljava/lang/Runnable;)V
+                    invoke-virtual {v0}, Ljava/lang/Thread;->start()V
+                    goto :froggo_download_invoke_done
+                    :froggo_download_invoke_check_fullscreen
+                    const/16 v1, 0x83
+                    if-ne v0, v1, :froggo_download_invoke_check_story
+                    invoke-static {p0, p1}, LX/WKI;->froggoChooseFullscreenStoryDownload(LX/WKI;Ljava/lang/Object;)V
+                    goto :froggo_download_invoke_done
+                    :froggo_download_invoke_check_story
+                    const/16 v1, 0x7f
+                    if-ne v0, v1, :froggo_download_invoke_done
+                    invoke-static {p1}, LX/WKI;->froggoShowDownloadFeedbackStart(Ljava/lang/Object;)V
+                    new-instance v0, Ljava/lang/Thread;
+                    invoke-direct {v0, p0}, Ljava/lang/Thread;-><init>(Ljava/lang/Runnable;)V
+                    invoke-virtual {v0}, Ljava/lang/Thread;->start()V
+                    goto :froggo_download_invoke_done
+                    :froggo_download_invoke_capture_button
+                    invoke-static {p1}, LX/WKI;->froggoCaptureDownloadButton(Ljava/lang/Object;)V
+                    :froggo_download_invoke_done
+                    sget-object v0, LX/0FI;->A00:LX/0FI;
+                    return-object v0
+                """.trimIndent(),
+            )
+        }
+        callbackClass.methods.add(callbackInvokeMethod)
+
         val videoCallbackClass = videoSaveCallback.classDef
         videoCallbackClass.interfaces.removeAll { it == "Ljava/lang/Runnable;" }
         videoCallbackClass.interfaces.add("Ljava/lang/Runnable;")
