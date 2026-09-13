@@ -546,7 +546,7 @@ internal fun compactReelDownloadWorkerInstructions(videoPathPrefix: String) = ""
     const-string v6, "User-Agent"
     const-string v7, "Mozilla/5.0"
     invoke-virtual {v5, v6, v7}, Landroid/app/DownloadManager${'$'}Request;->addRequestHeader(Ljava/lang/String;Ljava/lang/String;)Landroid/app/DownloadManager${'$'}Request;
-    const-string v6, "🐸 Reel"
+    const-string v6, "Facebook Reel"
     invoke-virtual {v5, v6}, Landroid/app/DownloadManager${'$'}Request;->setTitle(Ljava/lang/CharSequence;)Landroid/app/DownloadManager${'$'}Request;
     const-string v6, "video/mp4"
     invoke-virtual {v5, v6}, Landroid/app/DownloadManager${'$'}Request;->setMimeType(Ljava/lang/String;)Landroid/app/DownloadManager${'$'}Request;
@@ -586,7 +586,7 @@ internal fun compactReelDownloadWorkerInstructions(videoPathPrefix: String) = ""
     invoke-virtual {v7, v8, v9}, Ljava/lang/StringBuilder;->append(J)Ljava/lang/StringBuilder;
     const-string v8, ".mp4"
     invoke-virtual {v7, v8}, Ljava/lang/StringBuilder;->append(Ljava/lang/String;)Ljava/lang/StringBuilder;
-    invoke-virtual {v7}, Ljava/lang/StringBuilder;->toString()Ljava/lang/String;
+    invoke-virtual {v7, v8}, Ljava/lang/StringBuilder;->toString()Ljava/lang/String;
     move-result-object v6
 
     sget-object v7, Landroid/os/Environment;->DIRECTORY_DOWNLOADS:Ljava/lang/String;
@@ -760,7 +760,7 @@ internal fun compactVideoDownloadWorkerInstructions(videoPathPrefix: String) = "
     invoke-virtual {v7, v8}, Ljava/lang/StringBuilder;->append(Ljava/lang/String;)Ljava/lang/StringBuilder;
     invoke-static {}, Ljava/lang/System;->currentTimeMillis()J
     move-result-wide v8
-    invoke-virtual {v7, v8, v9}, Ljava/lang/StringBuilder;->append(J)Ljava/lang/StringBuilder;
+    invoke-virtual {v7, v8, 9}, Ljava/lang/StringBuilder;->append(J)Ljava/lang/StringBuilder;
     const-string v8, ".mp4"
     invoke-virtual {v7, v8}, Ljava/lang/StringBuilder;->append(Ljava/lang/String;)Ljava/lang/StringBuilder;
     invoke-virtual {v7}, Ljava/lang/StringBuilder;->toString()Ljava/lang/String;
