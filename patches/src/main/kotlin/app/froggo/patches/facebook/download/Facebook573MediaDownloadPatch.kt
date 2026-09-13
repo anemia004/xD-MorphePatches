@@ -69,18 +69,10 @@ private val fullscreenStoryTopbar = Fingerprint(
     },
 )
 
-private val reelSidebar = Fingerprint(
-    returnType = "LX/3Pu;",
-    parameters = listOf("LX/3QZ;"),
-    custom = { method, classDef ->
-        classDef.type == "LX/9vm;" && method.name == "A1K"
-    },
-)
-
 @Suppress("unused")
 val downloadFacebookMedia573Patch = bytecodePatch(
     name = "Download Facebook Media (573)",
-    description = "Adds direct media downloads for Stories, Reels sidebar, and Feed Videos.",
+    description = "Adds direct media downloads for Facebook 573.",
     default = true,
 ) {
     compatibleWith(COMPATIBILITY_FACEBOOK_573)
@@ -990,20 +982,6 @@ val downloadFacebookMedia573Patch = bytecodePatch(
         }
         callbackClass.methods.add(fullscreenStoryWorkerMethod)
 
-        val reelWorkerMethod = ImmutableMethod(
-            callbackClass.type,
-            "froggoRunReelDownload",
-            emptyList<ImmutableMethodParameter>(),
-            "V",
-            AccessFlags.PUBLIC.value or AccessFlags.SYNTHETIC.value,
-            null,
-            null,
-            MutableMethodImplementation(16),
-        ).toMutable().apply {
-            addInstructions(0, compactReelDownloadWorkerInstructions(videoFolderOption.value!!))
-        }
-        callbackClass.methods.add(reelWorkerMethod)
-
         val workerMethod = ImmutableMethod(
             callbackClass.type,
             "run",
@@ -1033,7 +1011,6 @@ val downloadFacebookMedia573Patch = bytecodePatch(
                     if-eq v0, v1, :froggo_story_first_frame_worker
                     const/16 v1, 0x89
                     if-eq v0, v1, :froggo_story_first_frame_worker
-                    invoke-virtual {p0}, LX/WKI;->froggoRunReelDownload()V
                     goto :froggo_download_dispatch_end
                     :froggo_fullscreen_story_worker
                     invoke-virtual {p0}, LX/WKI;->froggoRunFullscreenStoryDownload()V
@@ -1237,109 +1214,6 @@ val downloadFacebookMedia573Patch = bytecodePatch(
                 invoke-direct {v0, p0}, Ljava/lang/Thread;-><init>(Ljava/lang/Runnable;)V
                 invoke-virtual {v0}, Ljava/lang/Thread;->start()V
                 return-void
-            """.trimIndent(),
-        )
-
-        val reelDownloadHelper = ImmutableMethod(
-            reelSidebar.classDef.type,
-            "froggoCreateReelDownloadAction",
-            listOf(
-                ImmutableMethodParameter("Lcom/facebook/auth/usersession/FbUserSession;", null, null),
-                ImmutableMethodParameter("LX/3QZ;", null, null),
-                ImmutableMethodParameter("LX/4ta;", null, null),
-                ImmutableMethodParameter("LX/BsO;", null, null),
-            ),
-            "LX/3Pu;",
-            AccessFlags.PUBLIC.value or AccessFlags.STATIC.value,
-            null,
-            null,
-            MutableMethodImplementation(16),
-        ).toMutable().apply {
-            addInstructions(
-                0,
-                """
-                    new-instance v0, LX/WKI;
-                    const/16 v1, 0x80
-                    move-object/from16 v2, p1
-                    move-object/from16 v3, p2
-                    move-object/from16 v4, p3
-                    invoke-direct {v0, v1, v2, v3, v4}, LX/WKI;-><init>(ILjava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;)V
-
-                    new-instance v1, LX/WKI;
-                    const/16 v2, 0x81
-                    move-object/from16 v3, p1
-                    move-object/from16 v4, p2
-                    move-object/from16 v5, p3
-                    invoke-direct {v1, v2, v3, v4, v5}, LX/WKI;-><init>(ILjava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;)V
-
-                    new-instance v2, LX/2vk;
-                    const-string v3, "Download"
-                    move-object v4, v0
-                    invoke-direct {v2, v3, v4}, LX/2vk;-><init>(Ljava/lang/String;Lkotlin/jvm/functions/Function1;)V
-
-                    new-instance v3, LX/2QZ;
-                    const-string v4, "Download"
-                    move-object v5, v1
-                    invoke-direct {v3, v4, v5}, LX/2QZ;-><init>(Ljava/lang/String;Lkotlin/jvm/functions/Function1;)V
-
-                    new-instance v4, LX/9yX;
-                    sget-object v5, LX/1Vq;->A80:LX/1Vq;
-                    invoke-direct {v4, v5}, LX/9yX;-><init>(LX/1Vq;)V
-
-                    move-object/from16 v5, p0
-                    sget-object v6, LX/1c6;->A02:LX/1c6;
-                    move-object v7, v2
-                    move-object v8, v3
-                    move-object v9, v3
-                    move-object v10, v4
-                    sget-object v11, Ljava/lang/Boolean;->FALSE:Ljava/lang/Boolean;
-                    sget-object v12, Ljava/lang/Boolean;->TRUE:Ljava/lang/Boolean;
-                    const-string v13, "download_button"
-                    const/4 v14, 0x0
-                    const-string v15, "Download"
-
-                    invoke-static/range {v5 .. v15}, LX/2iZ;->A00(Lcom/facebook/auth/usersession/FbUserSession;LX/1c6;LX/2vk;LX/2QZ;LX/2QZ;LX/C8v;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Object;Ljava/lang/String;Ljava/lang/String;)LX/9yY;
-                    move-result-object v0
-                    return-object v0
-                """.trimIndent(),
-            )
-        }
-        reelSidebar.classDef.methods.add(reelDownloadHelper)
-
-        val reelSidebarBuildCalls = reelSidebar.method.implementation!!.instructions.withIndex().mapNotNull { (index, instruction) ->
-            val reference = (instruction as? ReferenceInstruction)?.reference as? MethodReference
-            if (
-                reference?.definingClass == "LX/9yh;" &&
-                reference.name == "A01" &&
-                reference.parameterTypes.size == 17
-            ) {
-                index
-            } else {
-                null
-            }
-        }
-        require(reelSidebarBuildCalls.size == 1) {
-            "Expected one UDD sidebar builder finalization in A1K"
-        }
-        reelSidebar.method.addInstructions(
-            reelSidebarBuildCalls.single(),
-            """
-                move-object/from16 v0, p1
-                move-object/from16 v1, v14
-                move-object/from16 v2, v37
-                move-object/from16 v3, v94
-                invoke-static {v0, v1, v2, v3}, LX/9vm;->froggoCreateReelDownloadAction(Lcom/facebook/auth/usersession/FbUserSession;LX/3QZ;LX/4ta;LX/BsO;)LX/3Pu;
-                move-result-object v0
-                move-object/from16 v1, v33
-                invoke-virtual {v1, v0}, Ljava/util/AbstractCollection;->add(Ljava/lang/Object;)Z
-                move-object/from16 v1, v31
-                sget-object v2, LX/1Vq;->A80:LX/1Vq;
-                invoke-static {v2}, LX/9yV;->A00(LX/1Vq;)LX/7w5;
-                move-result-object v2
-                invoke-virtual {v1, v2}, Ljava/util/AbstractCollection;->add(Ljava/lang/Object;)Z
-                move-object/from16 v1, v32
-                const-string v2, "DOWNLOAD"
-                invoke-virtual {v1, v2}, Ljava/util/AbstractCollection;->add(Ljava/lang/Object;)Z
             """.trimIndent(),
         )
     }
