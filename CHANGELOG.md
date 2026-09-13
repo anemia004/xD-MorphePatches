@@ -1,3 +1,9 @@
+## [1.0.15](https://github.com/anemia004/xD-MorphePatches/compare/v1.0.14...v1.0.15) (2026-09-13)
+
+### 🐛 Bug Fixes
+
+* Facebook573MediaDownloadPatch.kt ([a617e51](https://github.com/anemia004/xD-MorphePatches/commit/a617e514dd34ba6f9e56ac3cad5c764432c0762d))
+
 ## [1.0.14](https://github.com/anemia004/xD-MorphePatches/compare/v1.0.13...v1.0.14) (2026-09-13)
 
 ### 🐛 Bug Fixes

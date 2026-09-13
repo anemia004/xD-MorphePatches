@@ -15,7 +15,7 @@ Click here to add these patches to Morphe: https://morphe.software/add-source?gi
 ## 🩹 Patches list
 
 <!-- PATCHES_START EXPANDED -->
-> **[v1.0.14](https://github.com/anemia004/xD-MorphePatches/releases/tag/v1.0.14)**&nbsp;&nbsp;•&nbsp;&nbsp;`main`&nbsp;&nbsp;•&nbsp;&nbsp;5 patches total
+> **[v1.0.15](https://github.com/anemia004/xD-MorphePatches/releases/tag/v1.0.15)**&nbsp;&nbsp;•&nbsp;&nbsp;`main`&nbsp;&nbsp;•&nbsp;&nbsp;5 patches total
 <details open>
 <summary>📦 Facebook&nbsp;&nbsp;•&nbsp;&nbsp;5 patches</summary>
 <br>
@@ -31,7 +31,7 @@ Click here to add these patches to Morphe: https://morphe.software/add-source?gi
 | [Block Facebook Reels ads (573)](#block-facebook-reels-ads-573) | Blocks sponsored Reels in the swipe feed plus Reels/video banners, video ads, and commercial breaks. |  |
 | [Block Facebook Story ads (573)](#block-facebook-story-ads-573) | Filters Story ad buckets only at the concrete X68 provider return boundary. |  |
 | [Block Facebook automatic refresh (573)](#block-facebook-automatic-refresh-573) | Suppresses lifecycle feed refresh while preserving explicit refresh paths. |  |
-| [Download Facebook Media (573)](#download-facebook-media-573) | Native DownloadManager-backed downloads for Stories, Feed and Reels. | • Facebook image folder<br>• Facebook video folder |
+| [Download Facebook Media (573)](#download-facebook-media-573) | Adds direct downloads for the visible Story, Reel, and video media through MediaStore. | • Facebook image folder<br>• Facebook video folder |
 
 </details>
 

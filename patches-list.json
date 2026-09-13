@@ -1,6 +1,6 @@
 {
   "NOTE": "Do NOT manually edit this file. This file is automatically updated when semantic release (release.yml) runs. Manually editing this file can break your releases and break third party tools that use this file.",
-  "version": "1.0.14",
+  "version": "1.0.15",
   "patches": [
     {
       "name": "Block Facebook Feed ads (573)",
@@ -116,7 +116,7 @@
     },
     {
       "name": "Download Facebook Media (573)",
-      "description": "Native DownloadManager-backed downloads for Stories, Feed and Reels.",
+      "description": "Adds direct downloads for the visible Story, Reel, and video media through MediaStore.",
       "default": true,
       "dependencies": [],
       "compatiblePackages": [
