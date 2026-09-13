@@ -53,26 +53,10 @@ private val storyHeaderCallback = Fingerprint(
     },
 )
 
-private val storyAlternateHeader = Fingerprint(
-    returnType = "LX/3Pu;",
-    parameters = listOf("LX/24H;"),
-    custom = { method, classDef ->
-        classDef.type == "LX/P0G;" && method.name == "render"
-    },
-)
-
-private val fullscreenStoryTopbar = Fingerprint(
-    returnType = "LX/3Pu;",
-    parameters = listOf("LX/24H;"),
-    custom = { method, classDef ->
-        classDef.type == "LX/9W5;" && method.name == "render"
-    },
-)
-
 @Suppress("unused")
 val downloadFacebookMedia573Patch = bytecodePatch(
     name = "Download Facebook Media (573)",
-    description = "Adds direct downloads for Stories and enables DownloadManager for Feed/Reel video saves.",
+    description = "Adds direct downloads for Stories and DownloadManager support for Feed/Reel video saves.",
     default = true,
 ) {
     compatibleWith(COMPATIBILITY_FACEBOOK_573)
@@ -261,153 +245,6 @@ val downloadFacebookMedia573Patch = bytecodePatch(
                 ),
             )
         }
-
-        val storyAlternateHeaderInstructions = storyAlternateHeader.method.implementation!!.instructions
-        val storyAlternateHeaderAnchors = storyAlternateHeaderInstructions.withIndex().mapNotNull { (index, instruction) ->
-            val reference = (instruction as? ReferenceInstruction)?.reference as? MethodReference
-            if (
-                reference?.definingClass == "LX/Nqo;" &&
-                    reference.name == "A0x"
-            ) {
-                index
-            } else {
-                null
-            }
-        }
-        require(storyAlternateHeaderAnchors.size == 1) {
-            "Expected one alternate Story header child collection anchor"
-        }
-        storyAlternateHeader.method.addInstructions(
-            storyAlternateHeaderAnchors.single(),
-            """
-                invoke-static {v6}, LX/4hG;->A00(LX/3QZ;)LX/4hH;
-                move-result-object v0
-                const/high16 v1, 0x41c00000
-                invoke-virtual {v0, v1}, LX/4hH;->A1j(F)V
-                invoke-virtual {v0, v1}, LX/4hH;->A1X(F)V
-                const/4 v1, 0x0
-                invoke-virtual {v0, v1}, LX/4hH;->A1W(F)V
-                invoke-static {v0}, LX/9Di;->A1X(LX/Nqn;)V
-                sget-object v1, LX/1y5;->A4C:LX/1y5;
-                sget-object v2, Lcom/facebook/fds/core/theme/component/FDSColors;->A00:Lcom/facebook/fds/core/theme/component/FDSColors;
-                invoke-static {v0, v1, v2, v6}, LX/HrH;->A1D(LX/4hH;LX/1y5;Lcom/facebook/fds/core/theme/component/FDSColors;LX/3QZ;)V
-                sget v1, Lcom/facebook/katana/R${'$'}drawable${'$'}3;->fb_ic_download_24:I
-                invoke-virtual {v0, v1}, LX/4hH;->A35(I)V
-                invoke-static {v7}, LX/CQu;->A10(Ljava/lang/Object;)Ljava/lang/Object;
-                move-result-object v1
-                new-instance v2, LX/WKI;
-                const/16 v3, 0x7f
-                move-object v9, v1
-                move-object v10, v1
-                move-object v11, v1
-                invoke-direct {v2, v3, v9, v10, v11}, LX/WKI;-><init>(ILjava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;)V
-                new-instance v1, LX/3S5;
-                const/4 v3, 0x0
-                invoke-direct {v1, v3, v2}, LX/3S5;-><init>(LX/3QZ;Lkotlin/jvm/functions/Function1;)V
-                invoke-virtual {v0, v1}, LX/4hH;->A2C(LX/X6V;)V
-                invoke-virtual {v0}, LX/Nqn;->A1O()V
-                iget-object v0, v0, LX/4hH;->A00:LX/4hG;
-                invoke-virtual {v4, v0}, Ljava/util/AbstractCollection;->add(Ljava/lang/Object;)Z
-            """.trimIndent(),
-        )
-
-        val fullscreenStoryDownloadHelper = ImmutableMethod(
-            fullscreenStoryTopbar.classDef.type,
-            "froggoCreateFullscreenStoryDownloadButton",
-            listOf(
-                ImmutableMethodParameter(fullscreenStoryTopbar.classDef.type, null, null),
-                ImmutableMethodParameter("LX/3QZ;", null, null),
-            ),
-            "LX/AnR;",
-            AccessFlags.PUBLIC.value or AccessFlags.STATIC.value,
-            null,
-            null,
-            MutableMethodImplementation(16),
-        ).toMutable().apply {
-            addInstructions(
-                0,
-                """
-                    invoke-static {p1}, LX/9Di;->A0o(LX/3QZ;)Ljava/lang/Object;
-                    move-result-object v0
-                    check-cast v0, LX/BsZ;
-                    invoke-static {v0}, LX/BsZ;->A00(LX/BsZ;)Lcom/facebook/auth/usersession/FbUserSession;
-                    move-result-object v1
-                    invoke-virtual {p1}, LX/3QZ;->A01()Landroid/content/Context;
-                    move-result-object v2
-                    move-object/from16 v3, p0
-                    iget-object v3, v3, LX/9W5;->A04:Lcom/facebook/stories/model/StoryCard;
-
-                    new-instance v4, LX/WKI;
-                    const/16 v5, 0x83
-                    move-object v6, v2
-                    move-object v7, v3
-                    const/4 v8, 0x0
-                    invoke-direct {v4, v5, v6, v7, v8}, LX/WKI;-><init>(ILjava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;)V
-
-                    invoke-static {v4}, LX/3S5;->A00(Lkotlin/jvm/functions/Function1;)LX/3S5;
-                    move-result-object v5
-
-                    sget-object v2, LX/1Vq;->A80:LX/1Vq;
-                    sget-object v3, LX/1c6;->A02:LX/1c6;
-                    move-object v4, v5
-                    const-string v5, "Descargar"
-                    const-string v6, "storyviewer_download_button"
-                    new-instance v0, LX/AnR;
-                    invoke-direct/range {v0 .. v6}, LX/AnR;-><init>(Lcom/facebook/auth/usersession/FbUserSession;LX/1Vq;LX/1c6;LX/X6V;Ljava/lang/String;Ljava/lang/String;)V
-                    return-object v0
-                """.trimIndent(),
-            )
-        }
-        fullscreenStoryTopbar.classDef.methods.add(fullscreenStoryDownloadHelper)
-
-        val fullscreenStoryTopbarInstructions = fullscreenStoryTopbar.method.implementation!!.instructions
-        val storyTrayConstructorCalls = fullscreenStoryTopbarInstructions.withIndex().mapNotNull { (index, instruction) ->
-            val reference = (instruction as? ReferenceInstruction)?.reference as? MethodReference
-            if (
-                reference?.definingClass == "LX/An8;" &&
-                    reference.name == "<init>" &&
-                    reference.parameterTypes == listOf(
-                        "Lcom/facebook/auth/usersession/FbUserSession;",
-                        "LX/FlR;",
-                        "Lcom/facebook/stories/model/StoryBucket;",
-                        "LX/BsZ;",
-                    )
-            ) {
-                index
-            } else {
-                null
-            }
-        }
-        require(storyTrayConstructorCalls.size == 1) {
-            "Expected one fullscreen Story tray entrypoint component"
-        }
-        val storyTrayConstructorIndex = storyTrayConstructorCalls.single()
-        val storyTrayConstructorRegisters = fullscreenStoryTopbarInstructions[storyTrayConstructorIndex] as FiveRegisterInstruction
-        val storyTrayRegister = storyTrayConstructorRegisters.registerC
-        val storyTrayAddIndex =
-            (storyTrayConstructorIndex + 1 until minOf(storyTrayConstructorIndex + 5, fullscreenStoryTopbarInstructions.size))
-                .firstOrNull { index ->
-                    val instruction = fullscreenStoryTopbarInstructions[index]
-                    val reference = (instruction as? ReferenceInstruction)?.reference as? MethodReference
-                    reference?.definingClass == "Ljava/util/AbstractCollection;" &&
-                        reference.name == "add" &&
-                        reference.parameterTypes == listOf("Ljava/lang/Object;") &&
-                        (instruction as? FiveRegisterInstruction)?.registerCount == 2 &&
-                        (instruction as FiveRegisterInstruction).registerD == storyTrayRegister
-                }
-        requireNotNull(storyTrayAddIndex) {
-            "Expected the fullscreen Story tray entrypoint to be added to its topbar collection"
-        }
-        fullscreenStoryTopbar.method.addInstructions(
-            storyTrayAddIndex + 1,
-            """
-                move-object/from16 v66, p0
-                move-object/from16 v67, v44
-                invoke-static/range {v66 .. v67}, LX/9W5;->froggoCreateFullscreenStoryDownloadButton(LX/9W5;LX/3QZ;)LX/AnR;
-                move-result-object v8
-                invoke-virtual {v9, v8}, Ljava/util/AbstractCollection;->add(Ljava/lang/Object;)Z
-            """.trimIndent(),
-        )
 
         menuCallback.method.addInstructions(
             0,
@@ -792,154 +629,6 @@ val downloadFacebookMedia573Patch = bytecodePatch(
         }
         callbackClass.methods.add(storyChoiceHelper)
 
-        val fullscreenStoryChoiceHelper = ImmutableMethod(
-            callbackClass.type,
-            "froggoChooseFullscreenStoryDownload",
-            listOf(
-                ImmutableMethodParameter(callbackClass.type, null, null),
-                ImmutableMethodParameter("Ljava/lang/Object;", null, null),
-            ),
-            "V",
-            AccessFlags.PUBLIC.value or AccessFlags.STATIC.value,
-            null,
-            null,
-            MutableMethodImplementation(12),
-        ).toMutable().apply {
-            addInstructions(
-                0,
-                """
-                    iget-object v0, p0, LX/WKI;->A01:Ljava/lang/Object;
-                    check-cast v0, Lcom/facebook/stories/model/StoryCard;
-                    invoke-virtual {v0}, Lcom/facebook/stories/model/StoryCard;->A0l()LX/8OX;
-                    move-result-object v0
-                    sget-object v1, LX/8OX;->A0D:LX/8OX;
-                    if-eq v0, v1, :froggo_fullscreen_story_choice_video
-                    invoke-static {p1}, LX/WKI;->froggoShowDownloadFeedbackStart(Ljava/lang/Object;)V
-                    new-instance v0, Ljava/lang/Thread;
-                    invoke-direct {v0, p0}, Ljava/lang/Thread;-><init>(Ljava/lang/Runnable;)V
-                    invoke-virtual {v0}, Ljava/lang/Thread;->start()V
-                    return-void
-                    :froggo_fullscreen_story_choice_video
-                    invoke-static {p1}, LX/WKI;->froggoCaptureDownloadButton(Ljava/lang/Object;)V
-                    sget-object v6, LX/WKI;->froggoDownloadButton:Landroid/view/View;
-                    if-eqz v6, :froggo_fullscreen_story_choice_no_view
-                    invoke-virtual {v6}, Landroid/view/View;->getContext()Landroid/content/Context;
-                    move-result-object v0
-                    invoke-virtual {v0}, Landroid/content/Context;->getResources()Landroid/content/res/Resources;
-                    move-result-object v1
-                    invoke-virtual {v1}, Landroid/content/res/Resources;->getConfiguration()Landroid/content/res/Configuration;
-                    move-result-object v1
-                    invoke-virtual {v1}, Landroid/content/res/Configuration;->getLocales()Landroid/os/LocaleList;
-                    move-result-object v1
-                    const/4 v2, 0x0
-                    invoke-virtual {v1, v2}, Landroid/os/LocaleList;->get(I)Ljava/util/Locale;
-                    move-result-object v1
-                    invoke-virtual {v1}, Ljava/util/Locale;->getLanguage()Ljava/lang/String;
-                    move-result-object v1
-                    const-string v3, "es"
-                    invoke-virtual {v3, v1}, Ljava/lang/String;->equals(Ljava/lang/Object;)Z
-                    move-result v1
-                    if-eqz v1, :froggo_fullscreen_story_choice_english
-                    const-string v3, "Descargar historia"
-                    const-string v4, "Video completo"
-                    const-string v5, "Primer frame"
-                    goto :froggo_fullscreen_story_choice_text_ready
-                    :froggo_fullscreen_story_choice_english
-                    const-string v3, "Download story"
-                    const-string v4, "Full video"
-                    const-string v5, "First frame"
-                    :froggo_fullscreen_story_choice_text_ready
-                    const/4 v1, 0x2
-                    new-array v1, v1, [Ljava/lang/CharSequence;
-                    const/4 v2, 0x0
-                    aput-object v4, v1, v2
-                    const/4 v2, 0x1
-                    aput-object v5, v1, v2
-                    new-instance v2, LX/WKI;
-                    const/16 v4, 0x8a
-                    invoke-direct {v2, v4, p0, p1, p0}, LX/WKI;-><init>(ILjava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;)V
-                    new-instance v4, Landroid/app/AlertDialog${'$'}Builder;
-                    invoke-direct {v4, v0}, Landroid/app/AlertDialog${'$'}Builder;-><init>(Landroid/content/Context;)V
-                    invoke-virtual {v4, v3}, Landroid/app/AlertDialog${'$'}Builder;->setTitle(Ljava/lang/CharSequence;)Landroid/app/AlertDialog${'$'}Builder;
-                    invoke-virtual {v4, v1, v2}, Landroid/app/AlertDialog${'$'}Builder;->setItems([Ljava/lang/CharSequence;Landroid/content/DialogInterface${'$'}OnClickListener;)Landroid/app/AlertDialog${'$'}Builder;
-                    invoke-virtual {v4}, Landroid/app/AlertDialog${'$'}Builder;->show()Landroid/app/AlertDialog;
-                    return-void
-                    :froggo_fullscreen_story_choice_no_view
-                    invoke-static {p1}, LX/WKI;->froggoShowDownloadFeedbackStart(Ljava/lang/Object;)V
-                    new-instance v0, Ljava/lang/Thread;
-                    invoke-direct {v0, p0}, Ljava/lang/Thread;-><init>(Ljava/lang/Runnable;)V
-                    invoke-virtual {v0}, Ljava/lang/Thread;->start()V
-                    return-void
-                """.trimIndent(),
-            )
-        }
-        callbackClass.methods.add(fullscreenStoryChoiceHelper)
-
-        val storyChoiceClickMethod = ImmutableMethod(
-            callbackClass.type,
-            "onClick",
-            listOf(
-                ImmutableMethodParameter("Landroid/content/DialogInterface;", null, null),
-                ImmutableMethodParameter("I", null, null),
-            ),
-            "V",
-            AccessFlags.PUBLIC.value,
-            null,
-            null,
-            MutableMethodImplementation(8),
-        ).toMutable().apply {
-            addInstructions(
-                0,
-                """
-                    iget v0, p0, LX/WKI;->${'$'}t:I
-                    const/16 v1, 0x8a
-                    if-ne v0, v1, :froggo_story_choice_click_header
-                    iget-object v2, p0, LX/WKI;->A01:Ljava/lang/Object;
-                    invoke-static {v2}, LX/WKI;->froggoShowDownloadFeedbackStart(Ljava/lang/Object;)V
-                    iget-object v2, p0, LX/WKI;->A00:Ljava/lang/Object;
-                    check-cast v2, LX/WKI;
-                    const/4 v1, 0x0
-                    if-ne p2, v1, :froggo_fullscreen_story_choice_first_frame
-                    new-instance v0, Ljava/lang/Thread;
-                    invoke-direct {v0, v2}, Ljava/lang/Thread;-><init>(Ljava/lang/Runnable;)V
-                    invoke-virtual {v0}, Ljava/lang/Thread;->start()V
-                    return-void
-                    :froggo_fullscreen_story_choice_first_frame
-                    iget-object v3, v2, LX/WKI;->A00:Ljava/lang/Object;
-                    iget-object v4, v2, LX/WKI;->A01:Ljava/lang/Object;
-                    new-instance v2, LX/WKI;
-                    const/16 v1, 0x89
-                    const/4 v5, 0x0
-                    invoke-direct {v2, v1, v3, v4, v5}, LX/WKI;-><init>(ILjava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;)V
-                    new-instance v0, Ljava/lang/Thread;
-                    invoke-direct {v0, v2}, Ljava/lang/Thread;-><init>(Ljava/lang/Runnable;)V
-                    invoke-virtual {v0}, Ljava/lang/Thread;->start()V
-                    return-void
-                    :froggo_story_choice_click_header
-                    const/16 v1, 0x87
-                    if-ne v0, v1, :froggo_story_choice_click_done
-                    iget-object v0, p0, LX/WKI;->A01:Ljava/lang/Object;
-                    invoke-static {v0}, LX/WKI;->froggoShowDownloadFeedbackStart(Ljava/lang/Object;)V
-                    iget-object v0, p0, LX/WKI;->A00:Ljava/lang/Object;
-                    const/4 v1, 0x0
-                    if-ne p2, v1, :froggo_story_choice_first_frame
-                    const/16 v1, 0x7f
-                    goto :froggo_story_choice_worker_ready
-                    :froggo_story_choice_first_frame
-                    const/16 v1, 0x88
-                    :froggo_story_choice_worker_ready
-                    new-instance v2, LX/WKI;
-                    invoke-direct {v2, v1, v0, v0, v0}, LX/WKI;-><init>(ILjava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;)V
-                    new-instance v0, Ljava/lang/Thread;
-                    invoke-direct {v0, v2}, Ljava/lang/Thread;-><init>(Ljava/lang/Runnable;)V
-                    invoke-virtual {v0}, Ljava/lang/Thread;->start()V
-                    :froggo_story_choice_click_done
-                    return-void
-                """.trimIndent(),
-            )
-        }
-        callbackClass.methods.add(storyChoiceClickMethod)
-
         val storyWorkerMethod = ImmutableMethod(
             callbackClass.type,
             "froggoRunStoryDownload",
@@ -968,20 +657,6 @@ val downloadFacebookMedia573Patch = bytecodePatch(
         }
         callbackClass.methods.add(storyFirstFrameWorkerMethod)
 
-        val fullscreenStoryWorkerMethod = ImmutableMethod(
-            callbackClass.type,
-            "froggoRunFullscreenStoryDownload",
-            emptyList<ImmutableMethodParameter>(),
-            "V",
-            AccessFlags.PUBLIC.value or AccessFlags.SYNTHETIC.value,
-            null,
-            null,
-            MutableMethodImplementation(16),
-        ).toMutable().apply {
-            addInstructions(0, fullscreenStoryDownloadWorkerInstructions(imagePathPrefix, videoPathPrefix))
-        }
-        callbackClass.methods.add(fullscreenStoryWorkerMethod)
-
         val workerMethod = ImmutableMethod(
             callbackClass.type,
             "run",
@@ -1003,17 +678,10 @@ val downloadFacebookMedia573Patch = bytecodePatch(
                     if-eq v0, v1, :froggo_download_button_cleanup
                     const/16 v1, 0x82
                     if-eq v0, v1, :froggo_toast_worker
-                    const/16 v1, 0x83
-                    if-eq v0, v1, :froggo_fullscreen_story_worker
                     const/16 v1, 0x7f
                     if-eq v0, v1, :froggo_story_download_worker
                     const/16 v1, 0x88
                     if-eq v0, v1, :froggo_story_first_frame_worker
-                    const/16 v1, 0x89
-                    if-eq v0, v1, :froggo_story_first_frame_worker
-                    goto :froggo_download_dispatch_end
-                    :froggo_fullscreen_story_worker
-                    invoke-virtual {p0}, LX/WKI;->froggoRunFullscreenStoryDownload()V
                     goto :froggo_download_dispatch_end
                     :froggo_story_download_worker
                     invoke-virtual {p0}, LX/WKI;->froggoRunStoryDownload()V
@@ -1142,52 +810,6 @@ val downloadFacebookMedia573Patch = bytecodePatch(
             )
         }
         callbackClass.methods.add(workerMethod)
-
-        val callbackInvokeMethod = ImmutableMethod(
-            callbackClass.type,
-            "invoke",
-            listOf(ImmutableMethodParameter("Ljava/lang/Object;", null, null)),
-            "Ljava/lang/Object;",
-            AccessFlags.PUBLIC.value,
-            null,
-            null,
-            MutableMethodImplementation(8),
-        ).toMutable().apply {
-            addInstructions(
-                0,
-                """
-                    iget v0, p0, LX/WKI;->${'$'}t:I
-                    const/16 v1, 0x80
-                    if-eq v0, v1, :froggo_download_invoke_capture_button
-                    const/16 v1, 0x81
-                    if-ne v0, v1, :froggo_download_invoke_check_fullscreen
-                    invoke-static {p1}, LX/WKI;->froggoShowDownloadFeedbackStart(Ljava/lang/Object;)V
-                    new-instance v0, Ljava/lang/Thread;
-                    invoke-direct {v0, p0}, Ljava/lang/Thread;-><init>(Ljava/lang/Runnable;)V
-                    invoke-virtual {v0}, Ljava/lang/Thread;->start()V
-                    goto :froggo_download_invoke_done
-                    :froggo_download_invoke_check_fullscreen
-                    const/16 v1, 0x83
-                    if-ne v0, v1, :froggo_download_invoke_check_story
-                    invoke-static {p0, p1}, LX/WKI;->froggoChooseFullscreenStoryDownload(LX/WKI;Ljava/lang/Object;)V
-                    goto :froggo_download_invoke_done
-                    :froggo_download_invoke_check_story
-                    const/16 v1, 0x7f
-                    if-ne v0, v1, :froggo_download_invoke_done
-                    invoke-static {p1}, LX/WKI;->froggoShowDownloadFeedbackStart(Ljava/lang/Object;)V
-                    new-instance v0, Ljava/lang/Thread;
-                    invoke-direct {v0, p0}, Ljava/lang/Thread;-><init>(Ljava/lang/Runnable;)V
-                    invoke-virtual {v0}, Ljava/lang/Thread;->start()V
-                    goto :froggo_download_invoke_done
-                    :froggo_download_invoke_capture_button
-                    invoke-static {p1}, LX/WKI;->froggoCaptureDownloadButton(Ljava/lang/Object;)V
-                    :froggo_download_invoke_done
-                    sget-object v0, LX/0FI;->A00:LX/0FI;
-                    return-object v0
-                """.trimIndent(),
-            )
-        }
-        callbackClass.methods.add(callbackInvokeMethod)
 
         val videoCallbackClass = videoSaveCallback.classDef
         videoCallbackClass.interfaces.removeAll { it == "Ljava/lang/Runnable;" }
