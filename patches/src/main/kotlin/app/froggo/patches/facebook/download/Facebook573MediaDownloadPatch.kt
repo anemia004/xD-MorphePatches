@@ -46,22 +46,20 @@ private val storyHeaderCallback = Fingerprint(
     },
 )
 
-// ---------------------------------------------------------------------------
-// Native DownloadManager helper. Injected once, reused by every worker.
-// ---------------------------------------------------------------------------
 private const val DOWNLOADER_TYPE = "Lcom/froggo/patches/FroggoDownloader;"
 
 private fun buildFroggoDownloaderClass(): ImmutableClassDef {
+
     val enqueue = ImmutableMethod(
         DOWNLOADER_TYPE,
         "enqueue",
         listOf(
             ImmutableMethodParameter("Landroid/content/Context;", null, null),
-            ImmutableMethodParameter("Ljava/lang/String;", null, null), // url
-            ImmutableMethodParameter("Ljava/lang/String;", null, null), // fileName
-            ImmutableMethodParameter("Ljava/lang/String;", null, null), // mimeType
-            ImmutableMethodParameter("Ljava/lang/String;", null, null), // dirType (Download/Movies/Pictures)
-            ImmutableMethodParameter("Ljava/lang/String;", null, null), // subDir (no leading /)
+            ImmutableMethodParameter("Ljava/lang/String;", null, null),
+            ImmutableMethodParameter("Ljava/lang/String;", null, null),
+            ImmutableMethodParameter("Ljava/lang/String;", null, null),
+            ImmutableMethodParameter("Ljava/lang/String;", null, null),
+            ImmutableMethodParameter("Ljava/lang/String;", null, null),
         ),
         "V",
         AccessFlags.PUBLIC.value or AccessFlags.STATIC.value,
@@ -147,6 +145,35 @@ private fun buildFroggoDownloaderClass(): ImmutableClassDef {
         )
     }
 
+    val enqueueShort = ImmutableMethod(
+        DOWNLOADER_TYPE,
+        "enqueueShort",
+        listOf(
+            ImmutableMethodParameter("Landroid/content/Context;", null, null),
+            ImmutableMethodParameter("Ljava/lang/String;", null, null),
+            ImmutableMethodParameter("Ljava/lang/String;", null, null),
+        ),
+        "V",
+        AccessFlags.PUBLIC.value or AccessFlags.STATIC.value,
+        null,
+        null,
+        MutableMethodImplementation(8),
+    ).toMutable().apply {
+        addInstructions(
+            0,
+            """
+                move-object v0, p0
+                move-object v1, p1
+                move-object v2, p2
+                const-string v3, "video/mp4"
+                const-string v4, "Movies"
+                const-string v5, "FroggoPatches/Facebook"
+                invoke-static/range {v0 .. v5}, Lcom/froggo/patches/FroggoDownloader;->enqueue(Landroid/content/Context;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
+                return-void
+            """.trimIndent(),
+        )
+    }
+
     return ImmutableClassDef(
         DOWNLOADER_TYPE,
         AccessFlags.PUBLIC.value or AccessFlags.FINAL.value,
@@ -156,7 +183,7 @@ private fun buildFroggoDownloaderClass(): ImmutableClassDef {
         emptyList(),
         emptyList(),
         emptyList(),
-        listOf(enqueue),   // direct (static) methods live here
+        listOf(enqueue, enqueueShort),
         emptyList(),
     )
 }
@@ -188,14 +215,12 @@ val downloadFacebookMedia573Patch = bytecodePatch(
     ) { it != null && !it.startsWith("/") && it.endsWith("@") && ".." !in it }
 
     execute {
-        val imagePathPrefix = imageFolderOption.value!!          // "Pictures/FroggoPatches/Facebook/@"
-        val videoPathPrefix = videoFolderOption.value!!          // "FroggoPatches/Facebook/@"
+        val imagePathPrefix = imageFolderOption.value!!
+        val videoPathPrefix = videoFolderOption.value!!
         val storyDirectActionHash = -2013570421
 
-        // 1. Inject the DownloadManager helper first.
         context.bytecodeContext.classes.add(buildFroggoDownloaderClass())
 
-        // 2. Resolve fingerprints loudly.
         val menuClass = menuCallback.resolve(context)?.classDef
             ?: error("menuCallback (LX/WKI;->Dtf) did not match in FB 573")
         val videoClass = videoSaveCallback.resolve(context)?.classDef
@@ -205,7 +230,6 @@ val downloadFacebookMedia573Patch = bytecodePatch(
         val headerCbClass = storyHeaderCallback.resolve(context)?.classDef
             ?: error("storyHeaderCallback (LX/9Uw;->A1O) did not match in FB 573")
 
-        // 3. Guarantee enough locals on the two callbacks we prepend into.
         menuCallback.method.implementation!!.apply {
             if (registerCount < 4) registerCount = 4
         }
@@ -213,9 +237,6 @@ val downloadFacebookMedia573Patch = bytecodePatch(
             if (registerCount < 4) registerCount = 4
         }
 
-        // -------------------------------------------------------------------
-        // Story header: build a download button, wire it to the action hash.
-        // -------------------------------------------------------------------
         val storyDirectButtonHelper = ImmutableMethod(
             headerClass.type,
             "froggoCreateStoryDownloadButton",
@@ -264,7 +285,7 @@ val downloadFacebookMedia573Patch = bytecodePatch(
                     move-object v0, v6
                     invoke-virtual {v0, v1}, LX/4hH;->A2C(LX/X6V;)V
                     sget-object v1, LX/2PU;->A04:LX/2PU;
-                    invoke-virtual {v0, LX/Nqn;->A2T(LX/2PU;)V
+                    invoke-virtual {v0, v1}, LX/Nqn;->A2T(LX/2PU;)V
                     invoke-virtual {v0}, LX/Nqn;->A1O()V
                     iget-object v0, v0, LX/4hH;->A00:LX/4hG;
                     return-object v0
@@ -273,9 +294,6 @@ val downloadFacebookMedia573Patch = bytecodePatch(
         }
         headerClass.methods.add(storyDirectButtonHelper)
 
-        // -------------------------------------------------------------------
-        // Story header callback — low-register only, no v4/v5.
-        // -------------------------------------------------------------------
         storyHeaderCallback.method.addInstructions(
             0,
             """
@@ -309,9 +327,6 @@ val downloadFacebookMedia573Patch = bytecodePatch(
             """.trimIndent(),
         )
 
-        // -------------------------------------------------------------------
-        // menuCallback — dispatch our synthetic action hash onto a worker.
-        // -------------------------------------------------------------------
         menuCallback.method.addInstructions(
             0,
             """
@@ -326,9 +341,6 @@ val downloadFacebookMedia573Patch = bytecodePatch(
             """.trimIndent(),
         )
 
-        // -------------------------------------------------------------------
-        // Helper methods on LX/WKI
-        // -------------------------------------------------------------------
         val callbackClass = menuClass
         callbackClass.interfaces.removeAll { it == "Ljava/lang/Runnable;" }
         callbackClass.interfaces.add("Ljava/lang/Runnable;")
@@ -359,7 +371,6 @@ val downloadFacebookMedia573Patch = bytecodePatch(
             ).toMutableField(),
         )
 
-        // --- toast / feedback helpers (unchanged) ---
         callbackClass.methods.add(
             ImmutableMethod(
                 callbackClass.type, "froggoPostToast",
@@ -580,7 +591,6 @@ val downloadFacebookMedia573Patch = bytecodePatch(
             }
         )
 
-        // --- story chooser dialog (Full video / First frame) ---
         callbackClass.methods.add(
             ImmutableMethod(
                 callbackClass.type, "froggoChooseStoryDownload",
@@ -655,12 +665,6 @@ val downloadFacebookMedia573Patch = bytecodePatch(
             }
         )
 
-        // -------------------------------------------------------------------
-        // Story workers — now just URL extraction + FroggoDownloader call.
-        // Replace FB_<Author> extraction with whatever the 573 StoryCard
-        // exposes (e.g. getOwnerName()/A0s()). Shown pattern is correct for
-        // the StoryViewerMoreButtonCallback wrapper.
-        // -------------------------------------------------------------------
         callbackClass.methods.add(
             ImmutableMethod(
                 callbackClass.type, "froggoRunStoryDownload",
@@ -670,26 +674,18 @@ val downloadFacebookMedia573Patch = bytecodePatch(
                 null, null, MutableMethodImplementation(12),
             ).toMutable().apply {
                 addInstructions(0, """
-                    # p0 = LX/WKI (this). $t = 0x7f; field A00 = StoryViewerMoreButtonCallback
                     iget-object v0, p0, LX/WKI;->A00:Ljava/lang/Object;
                     check-cast v0, Lcom/facebook/stories/viewer/ui/buckets/regular/topbar/menu/StoryViewerMoreButtonCallback;
 
                     iget-object v1, v0, Lcom/facebook/stories/viewer/ui/buckets/regular/topbar/menu/StoryViewerMoreButtonCallback;->A09:Landroid/content/Context;
                     iget-object v2, v0, Lcom/facebook/stories/viewer/ui/buckets/regular/topbar/menu/StoryViewerMoreButtonCallback;->A02:Lcom/facebook/stories/model/StoryCard;
 
-                    # StoryCard.A0t() -> LX/3QZ (activity); change if 573 differs.
-                    invoke-virtual {v2}, Lcom/facebook/stories/model/StoryCard;->A0t()LX/3QZ;
-                    move-result-object v2
-
-                    # --- v2 = activity, v1 = context. Fill url / filename / mime below ---
-                    # url  (v3): replace with the actual video URL getter you already
-                    #           used in compactStoryDownloadWorkerInstructions.
+                    # TODO: replace with real video URL getter on StoryCard v573
                     const-string v3, ""
 
-                    # author (v4): placeholder "unknown"
+                    # TODO: replace with real author getter on StoryCard v573
                     const-string v4, "unknown"
 
-                    # filename: FB_<author>_<ts>.mp4
                     new-instance v5, Ljava/lang/StringBuilder;
                     invoke-direct {v5}, Ljava/lang/StringBuilder;-><init>()V
                     const-string v6, "FB_"
@@ -710,7 +706,6 @@ val downloadFacebookMedia573Patch = bytecodePatch(
                     invoke-virtual {v5}, Ljava/lang/StringBuilder;->toString()Ljava/lang/String;
                     move-result-object v5
 
-                    # subDir: "FroggoPatches/Facebook/<author>"
                     new-instance v6, Ljava/lang/StringBuilder;
                     invoke-direct {v6}, Ljava/lang/StringBuilder;-><init>()V
                     const-string v7, "$videoPathPrefix"
@@ -721,12 +716,12 @@ val downloadFacebookMedia573Patch = bytecodePatch(
                     invoke-virtual {v6}, Ljava/lang/StringBuilder;->toString()Ljava/lang/String;
                     move-result-object v6
 
-                    move-object v0, v1                                     # Context
-                    move-object v1, v3                                     # url
-                    move-object v2, v5                                     # fileName
+                    move-object v0, v1
+                    move-object v1, v3
+                    move-object v2, v5
                     const-string v3, "video/mp4"
                     const-string v4, "Movies"
-                    move-object v5, v6                                     # subDir
+                    move-object v5, v6
                     invoke-static/range {v0 .. v5}, Lcom/froggo/patches/FroggoDownloader;->enqueue(Landroid/content/Context;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
 
                     const/4 v0, 0x1
@@ -745,15 +740,15 @@ val downloadFacebookMedia573Patch = bytecodePatch(
                 null, null, MutableMethodImplementation(12),
             ).toMutable().apply {
                 addInstructions(0, """
-                    # DownloadManager can't extract frames. Fall back to the
-                    # thumbnail URL (photo path) via FroggoDownloader as image/jpeg.
                     iget-object v0, p0, LX/WKI;->A00:Ljava/lang/Object;
                     check-cast v0, Lcom/facebook/stories/viewer/ui/buckets/regular/topbar/menu/StoryViewerMoreButtonCallback;
                     iget-object v1, v0, Lcom/facebook/stories/viewer/ui/buckets/regular/topbar/menu/StoryViewerMoreButtonCallback;->A09:Landroid/content/Context;
-                    iget-object v2, v0, Lcom/facebook/stories/viewer/ui/buckets/regular/topbar/menu/StoryViewerMoreButtonCallback;->A02:Lcom/facebook/stories/model/StoryCard;
 
-                    const-string v3, ""              # thumbnail url placeholder
-                    const-string v4, "unknown"       # author placeholder
+                    # TODO: replace with real thumbnail getter
+                    const-string v3, ""
+
+                    # TODO: replace with real author getter
+                    const-string v4, "unknown"
 
                     new-instance v5, Ljava/lang/StringBuilder;
                     invoke-direct {v5}, Ljava/lang/StringBuilder;-><init>()V
@@ -800,9 +795,6 @@ val downloadFacebookMedia573Patch = bytecodePatch(
             }
         )
 
-        // -------------------------------------------------------------------
-        // LX/WKI.run — dispatcher (unchanged logic, no register pressure).
-        // -------------------------------------------------------------------
         callbackClass.methods.add(
             ImmutableMethod(
                 callbackClass.type, "run",
@@ -993,74 +985,56 @@ val downloadFacebookMedia573Patch = bytecodePatch(
             }
         )
 
-        // -------------------------------------------------------------------
-        // Reels / Feed: hook the native "Save video" item. No sidebar hack.
-        // -------------------------------------------------------------------
         val videoCallbackClass = videoClass
         videoCallbackClass.interfaces.removeAll { it == "Ljava/lang/Runnable;" }
         videoCallbackClass.interfaces.add("Ljava/lang/Runnable;")
 
-        val videoWorkerMethod = ImmutableMethod(
-            videoCallbackClass.type, "run",
-            emptyList(),
-            "V",
-            AccessFlags.PUBLIC.value,
-            null, null, MutableMethodImplementation(12),
-        ).toMutable().apply {
-            addInstructions(0, """
-                # p0 = LX/bq4 (this). Extract URL + author the same way as before
-                # and hand off to DownloadManager.
-                # The original save callback stored the video on a field on `this`
-                # — reuse whatever field your old compactVideoDownloadWorker used.
-                invoke-virtual {p0}, LX/bq4;->getContext()Landroid/content/Context;
-                move-result-object v0
+        videoCallbackClass.methods.add(
+            ImmutableMethod(
+                videoCallbackClass.type, "run",
+                emptyList(),
+                "V",
+                AccessFlags.PUBLIC.value,
+                null, null, MutableMethodImplementation(10),
+            ).toMutable().apply {
+                addInstructions(0, """
+                    invoke-virtual {p0}, LX/bq4;->getContext()Landroid/content/Context;
+                    move-result-object v0
 
-                const-string v1, ""              # url placeholder
-                const-string v2, "unknown"       # author placeholder
+                    # TODO: replace with real video URL source
+                    const-string v1, ""
 
-                new-instance v3, Ljava/lang/StringBuilder;
-                invoke-direct {v3}, Ljava/lang/StringBuilder;-><init>()V
-                const-string v4, "FB_"
-                invoke-virtual {v3, v4}, Ljava/lang/StringBuilder;->append(Ljava/lang/String;)Ljava/lang/StringBuilder;
-                move-result-object v3
-                invoke-virtual {v3, v2}, Ljava/lang/StringBuilder;->append(Ljava/lang/String;)Ljava/lang/StringBuilder;
-                move-result-object v3
-                const-string v4, "_"
-                invoke-virtual {v3, v4}, Ljava/lang/StringBuilder;->append(Ljava/lang/String;)Ljava/lang/StringBuilder;
-                move-result-object v3
-                invoke-static {}, Ljava/lang/System;->currentTimeMillis()J
-                move-result-wide v4
-                invoke-virtual {v3, v4, v5}, Ljava/lang/StringBuilder;->append(J)Ljava/lang/StringBuilder;
-                move-result-object v3
-                const-string v4, ".mp4"
-                invoke-virtual {v3, v4}, Ljava/lang/StringBuilder;->append(Ljava/lang/String;)Ljava/lang/StringBuilder;
-                move-result-object v3
-                invoke-virtual {v3}, Ljava/lang/StringBuilder;->toString()Ljava/lang/String;
-                move-result-object v3
+                    # TODO: replace with real author getter
+                    const-string v2, "unknown"
 
-                new-instance v4, Ljava/lang/StringBuilder;
-                invoke-direct {v4}, Ljava/lang/StringBuilder;-><init>()V
-                const-string v5, "$videoPathPrefix"
-                invoke-virtual {v4, v5}, Ljava/lang/StringBuilder;->append(Ljava/lang/String;)Ljava/lang/StringBuilder;
-                move-result-object v4
-                invoke-virtual {v4, v2}, Ljava/lang/StringBuilder;->append(Ljava/lang/String;)Ljava/lang/StringBuilder;
-                move-result-object v4
-                invoke-virtual {v4}, Ljava/lang/StringBuilder;->toString()Ljava/lang/String;
-                move-result-object v4
+                    new-instance v3, Ljava/lang/StringBuilder;
+                    invoke-direct {v3}, Ljava/lang/StringBuilder;-><init>()V
+                    const-string v4, "FB_"
+                    invoke-virtual {v3, v4}, Ljava/lang/StringBuilder;->append(Ljava/lang/String;)Ljava/lang/StringBuilder;
+                    move-result-object v3
+                    invoke-virtual {v3, v2}, Ljava/lang/StringBuilder;->append(Ljava/lang/String;)Ljava/lang/StringBuilder;
+                    move-result-object v3
+                    const-string v4, "_"
+                    invoke-virtual {v3, v4}, Ljava/lang/StringBuilder;->append(Ljava/lang/String;)Ljava/lang/StringBuilder;
+                    move-result-object v3
+                    invoke-static {}, Ljava/lang/System;->currentTimeMillis()J
+                    move-result-wide v4
+                    invoke-virtual {v3, v4, v5}, Ljava/lang/StringBuilder;->append(J)Ljava/lang/StringBuilder;
+                    move-result-object v3
+                    const-string v4, ".mp4"
+                    invoke-virtual {v3, v4}, Ljava/lang/StringBuilder;->append(Ljava/lang/String;)Ljava/lang/StringBuilder;
+                    move-result-object v3
+                    invoke-virtual {v3}, Ljava/lang/StringBuilder;->toString()Ljava/lang/String;
+                    move-result-object v3
 
-                move-object v5, v0                 # Context
-                move-object v6, v1                 # url
-                move-object v7, v3                 # fileName
-                # 8 args > 7 locals -> rebuild with a 6-arg static call
-                # We pack into a fresh block using a helper-friendly order:
-                invoke-static {v5, v6, v7}, Lcom/froggo/patches/FroggoDownloader;->enqueueShort(Landroid/content/Context;Ljava/lang/String;Ljava/lang/String;)V
+                    invoke-static {v0, v1, v3}, Lcom/froggo/patches/FroggoDownloader;->enqueueShort(Landroid/content/Context;Ljava/lang/String;Ljava/lang/String;)V
 
-                const/4 v0, 0x1
-                invoke-static {v0}, LX/WKI;->froggoShowDownloadFeedbackResult(Z)V
-                return-void
-            """.trimIndent())
-        }
-        videoCallbackClass.methods.add(videoWorkerMethod)
+                    const/4 v0, 0x1
+                    invoke-static {v0}, LX/WKI;->froggoShowDownloadFeedbackResult(Z)V
+                    return-void
+                """.trimIndent())
+            }
+        )
 
         videoSaveCallback.method.addInstructions(0, """
             move-object v1, p1
