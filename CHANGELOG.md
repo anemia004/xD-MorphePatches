@@ -1,3 +1,9 @@
+## [1.0.5](https://github.com/anemia004/xD-MorphePatches/compare/v1.0.4...v1.0.5) (2026-09-13)
+
+### 🐛 Bug Fixes
+
+* Facebook573DownloadSmali.kt ([45da58b](https://github.com/anemia004/xD-MorphePatches/commit/45da58bd5c0e3850a60e88bc3a0acfcb8bb5453b))
+
 ## [1.0.4](https://github.com/anemia004/xD-MorphePatches/compare/v1.0.3...v1.0.4) (2026-09-13)
 
 ### 🐛 Bug Fixes
