@@ -1,7 +1,7 @@
 {
-  "created_at": "2026-09-13T17:09:33",
-  "description": "## [1.0.12](https://github.com/anemia004/xD-MorphePatches/compare/v1.0.11...v1.0.12) (2026-09-13)\n\n### 🐛 Bug Fixes\n\n* correct methods ([b118d1a](https://github.com/anemia004/xD-MorphePatches/commit/b118d1a74d882c70a9874d43fa01a52ed318cccc))",
-  "download_url": "https://github.com/anemia004/xD-MorphePatches/releases/download/v1.0.12/patches-1.0.12.mpp",
+  "created_at": "2026-09-13T17:47:48",
+  "description": "## [1.0.13](https://github.com/anemia004/xD-MorphePatches/compare/v1.0.12...v1.0.13) (2026-09-13)\n\n### 🐛 Bug Fixes\n\n* Facebook573MediaDownloadPatch.kt ([1ef3ec4](https://github.com/anemia004/xD-MorphePatches/commit/1ef3ec40600d336fbbbe5bd64120f20d566edab6))",
+  "download_url": "https://github.com/anemia004/xD-MorphePatches/releases/download/v1.0.13/patches-1.0.13.mpp",
   "signature_download_url": "",
-  "version": "1.0.12"
+  "version": "1.0.13"
 }
