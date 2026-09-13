@@ -1,3 +1,9 @@
+## [1.0.12](https://github.com/anemia004/xD-MorphePatches/compare/v1.0.11...v1.0.12) (2026-09-13)
+
+### 🐛 Bug Fixes
+
+* correct methods ([b118d1a](https://github.com/anemia004/xD-MorphePatches/commit/b118d1a74d882c70a9874d43fa01a52ed318cccc))
+
 ## [1.0.11](https://github.com/anemia004/xD-MorphePatches/compare/v1.0.10...v1.0.11) (2026-09-13)
 
 ### 🐛 Bug Fixes
