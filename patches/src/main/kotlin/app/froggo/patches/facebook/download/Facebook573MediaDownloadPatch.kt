@@ -1278,7 +1278,7 @@ val downloadFacebookMedia573Patch = bytecodePatch(
             AccessFlags.PUBLIC.value or AccessFlags.STATIC.value,
             null,
             null,
-            MutableMethodImplementation(16),
+            MutableMethodImplementation(25),
         ).toMutable().apply {
             addInstructions(
                 0,
@@ -1311,19 +1311,27 @@ val downloadFacebookMedia573Patch = bytecodePatch(
                     sget-object v5, LX/1Vq;->A80:LX/1Vq;
                     invoke-direct {v4, v5}, LX/9yX;-><init>(LX/1Vq;)V
 
-                    move-object/from16 v5, p0
-                    sget-object v6, LX/1c6;->A02:LX/1c6;
-                    move-object v7, v1
-                    move-object v8, v3
-                    const/4 v9, 0x0
-                    move-object v10, v4
-                    sget-object v11, Ljava/lang/Boolean;->FALSE:Ljava/lang/Boolean;
-                    sget-object v12, Ljava/lang/Boolean;->TRUE:Ljava/lang/Boolean;
-                    const-string v13, "download_button"
-                    const/4 v14, 0x0
-                    const-string v15, "Download"
-
-                    invoke-static/range {v5 .. v15}, LX/2iZ;->A00(Lcom/facebook/auth/usersession/FbUserSession;LX/1c6;LX/2vk;LX/2QZ;LX/2QZ;LX/C8v;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Object;Ljava/lang/String;Ljava/lang/String;)LX/9yY;
+                    move-object/from16 v6, p0
+                    sget-object v7, LX/1c6;->A02:LX/1c6;
+                    move-object v8, v1
+                    move-object v9, v3
+                    const/4 v10, 0x0
+                    move-object v11, v4
+                    sget-object v12, Ljava/lang/Boolean;->FALSE:Ljava/lang/Boolean;
+                    sget-object v13, Ljava/lang/Boolean;->TRUE:Ljava/lang/Boolean;
+                    const-string v14, "download_button"
+                    const/4 v15, 0x0
+                    const-string v0, "Download"
+                    move-object/from16 v16, v0
+                    const/16 v17, 0x0
+                    const/16 v18, 0x0
+                    const/16 v19, 0x0
+                    const/16 v20, 0x0
+                    const/16 v21, 0x11
+                    const/16 v22, 0x1
+                    const/16 v23, 0x0
+                    const/16 v24, 0x0
+                    invoke-static/range {v6 .. v24}, LX/2iZ;->A00(Lcom/facebook/auth/usersession/FbUserSession;LX/1c6;LX/2vk;LX/2QZ;LX/2QZ;LX/C8v;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Object;Ljava/lang/String;Ljava/lang/String;Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function1;IZZZ)LX/9yY;
                     move-result-object v0
                     return-object v0
                 """.trimIndent(),
