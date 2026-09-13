@@ -8,11 +8,15 @@ import app.morphe.patcher.patch.stringOption
 import app.morphe.patcher.util.proxy.mutableTypes.MutableField.Companion.toMutable as toMutableField
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod.Companion.toMutable
 import com.android.tools.smali.dexlib2.AccessFlags
+import com.android.tools.smali.dexlib2.HiddenApiRestriction
 import com.android.tools.smali.dexlib2.builder.MutableMethodImplementation
-import com.android.tools.smali.dexlib2.immutable.ImmutableClassDef
+import com.android.tools.smali.dexlib2.iface.Annotation
 import com.android.tools.smali.dexlib2.immutable.ImmutableField
 import com.android.tools.smali.dexlib2.immutable.ImmutableMethod
 import com.android.tools.smali.dexlib2.immutable.ImmutableMethodParameter
+
+private val NO_ANNOTATIONS: Set<Annotation> = emptySet()
+private val NO_HIDDEN_API: Set<HiddenApiRestriction> = emptySet()
 
 private val menuCallback = Fingerprint(
     returnType = "V",
@@ -46,30 +50,204 @@ private val storyHeaderCallback = Fingerprint(
     },
 )
 
-private const val DOWNLOADER_TYPE = "Lcom/froggo/patches/FroggoDownloader;"
+@Suppress("unused")
+val downloadFacebookMedia573Patch = bytecodePatch(
+    name = "Download Facebook Media (573)",
+    description = "Native DownloadManager-backed downloads for Stories, Feed and Reels.",
+    default = true,
+) {
+    compatibleWith(COMPATIBILITY_FACEBOOK_573)
 
-private fun buildFroggoDownloaderClass(): ImmutableClassDef {
+    val imageFolderOption = stringOption(
+        key = "facebookImageFolder",
+        default = "Pictures/FroggoPatches/Facebook/@",
+        values = mapOf("Pictures/FroggoPatches/Facebook/@" to "Pictures/FroggoPatches/Facebook/@"),
+        title = "Facebook image folder",
+        description = "Relative MediaStore folder prefix. The creator name is appended after @.",
+        required = true,
+    ) { it != null && it.startsWith("Pictures/") && it.endsWith("@") && ".." !in it }
 
-    val enqueue = ImmutableMethod(
-        DOWNLOADER_TYPE,
-        "enqueue",
-        listOf(
-            ImmutableMethodParameter("Landroid/content/Context;", null, null),
-            ImmutableMethodParameter("Ljava/lang/String;", null, null),
-            ImmutableMethodParameter("Ljava/lang/String;", null, null),
-            ImmutableMethodParameter("Ljava/lang/String;", null, null),
-            ImmutableMethodParameter("Ljava/lang/String;", null, null),
-            ImmutableMethodParameter("Ljava/lang/String;", null, null),
-        ),
-        "V",
-        AccessFlags.PUBLIC.value or AccessFlags.STATIC.value,
-        null,
-        null,
-        MutableMethodImplementation(12),
-    ).toMutable().apply {
-        addInstructions(
+    val videoFolderOption = stringOption(
+        key = "facebookVideoFolder",
+        default = "FroggoPatches/Facebook/@",
+        values = mapOf("Movies/FroggoPatches/Facebook/@" to "FroggoPatches/Facebook/@"),
+        title = "Facebook video folder",
+        description = "Folder below Movies. The creator name is appended after @.",
+        required = true,
+    ) { it != null && !it.startsWith("/") && it.endsWith("@") && ".." !in it }
+
+    execute {
+        val imagePathPrefix = imageFolderOption.value!!
+        val videoPathPrefix = videoFolderOption.value!!
+        val storyDirectActionHash = -2013570421
+
+        // Fingerprints auto-resolve; use .classDef / .method directly.
+        val menuClass = menuCallback.classDef
+        val videoClass = videoSaveCallback.classDef
+        val headerClass = storyHeader.classDef
+        // storyHeaderCallback.classDef reserved for parity but not used here.
+
+        // -------------------------------------------------------------------
+        // Story header: create a download button wired to the action hash.
+        // -------------------------------------------------------------------
+        val storyDirectButtonHelper = ImmutableMethod(
+            headerClass.type,
+            "froggoCreateStoryDownloadButton",
+            listOf(
+                ImmutableMethodParameter("LX/3QZ;", null, null),
+                ImmutableMethodParameter("Z", null, null),
+            ),
+            "LX/4hG;",
+            AccessFlags.PUBLIC.value or AccessFlags.STATIC.value,
+            null,
+            null,
+            MutableMethodImplementation(16),
+        ).toMutable().apply {
+            addInstructions(
+                0,
+                """
+                    invoke-static {p0}, LX/4hG;->A00(LX/3QZ;)LX/4hH;
+                    move-result-object v0
+                    const/high16 v1, 0x41c00000
+                    invoke-virtual {v0, v1}, LX/4hH;->A1j(F)V
+                    invoke-virtual {v0, v1}, LX/4hH;->A1X(F)V
+                    const/4 v1, 0x0
+                    invoke-virtual {v0, v1}, LX/4hH;->A1W(F)V
+                    invoke-static {v0}, LX/9Di;->A1X(LX/Nqn;)V
+                    sget-object v1, Lcom/facebook/fds/core/theme/component/FDSColors;->A00:Lcom/facebook/fds/core/theme/component/FDSColors;
+                    if-eqz p1, :froggo_story_download_button_light
+                    sget-object v2, LX/1y5;->A09:LX/1y5;
+                    goto :froggo_story_download_button_color_ready
+                    :froggo_story_download_button_light
+                    sget-object v2, LX/1y5;->A4C:LX/1y5;
+                    :froggo_story_download_button_color_ready
+                    invoke-virtual {v1, v2, p0}, Lcom/facebook/fds/core/theme/component/FDSColors;->A02(LX/1y5;LX/3QZ;)I
+                    move-result v1
+                    invoke-virtual {v0, v1}, LX/4hH;->A32(I)V
+                    sget v1, Lcom/facebook/katana/R${'$'}drawable${'$'}3;->fb_ic_download_24:I
+                    invoke-virtual {v0, v1}, LX/4hH;->A35(I)V
+                    move-object v6, v0
+                    move-object v0, p0
+                    sget-object v1, LX/1K7;->A03:LX/1K7;
+                    const-class v2, ${headerClass.type}
+                    const-string v3, "ExpandedMediaFeedHeaderComponent"
+                    const/4 v4, 0x0
+                    const v5, $storyDirectActionHash
+                    invoke-virtual/range {v0 .. v5}, LX/3QZ;->A07(LX/1K7;Ljava/lang/Class;Ljava/lang/String;[Ljava/lang/Object;I)LX/X6V;
+                    move-result-object v1
+                    move-object v0, v6
+                    invoke-virtual {v0, v1}, LX/4hH;->A2C(LX/X6V;)V
+                    sget-object v1, LX/2PU;->A04:LX/2PU;
+                    invoke-virtual {v0, v1}, LX/Nqn;->A2T(LX/2PU;)V
+                    invoke-virtual {v0}, LX/Nqn;->A1O()V
+                    iget-object v0, v0, LX/4hH;->A00:LX/4hG;
+                    return-object v0
+                """.trimIndent(),
+            )
+        }
+        headerClass.methods.add(storyDirectButtonHelper)
+
+        // -------------------------------------------------------------------
+        // Story header callback — low-register only.
+        // -------------------------------------------------------------------
+        storyHeaderCallback.method.addInstructions(
             0,
             """
+                iget v0, p1, LX/X6V;->A01:I
+                const v1, $storyDirectActionHash
+                if-ne v0, v1, :froggo_story_header_stock_callback
+
+                instance-of v0, p2, LX/1MP;
+                if-eqz v0, :froggo_story_header_touch_done
+
+                move-object v0, p2
+                check-cast v0, LX/1MP;
+                invoke-virtual {v0}, LX/1MP;->A00()Landroid/view/View;
+                move-result-object v0
+
+                iget-object v1, p1, LX/X6V;->A00:LX/1K9;
+                iget-object v1, v1, LX/1K9;->A00:LX/3QZ;
+                invoke-static {v1}, LX/41t;->A0O(LX/3QZ;)Ljava/lang/Object;
+                move-result-object v1
+                check-cast v1, LX/9VC;
+                iget-object v1, v1, LX/9VC;->A00:Lcom/facebook/stories/viewer/ui/buckets/regular/topbar/menu/StoryViewerMoreButtonCallback;
+                invoke-static {v1, v0}, LX/WKI;->froggoChooseStoryDownload(Lcom/facebook/stories/viewer/ui/buckets/regular/topbar/menu/StoryViewerMoreButtonCallback;Landroid/view/View;)V
+                const/4 v0, 0x0
+                return-object v0
+
+                :froggo_story_header_touch_done
+                sget-object v0, LX/0FI;->A00:LX/0FI;
+                return-object v0
+
+                :froggo_story_header_stock_callback
+            """.trimIndent(),
+        )
+
+        // -------------------------------------------------------------------
+        // menuCallback prepend.
+        // -------------------------------------------------------------------
+        menuCallback.method.addInstructions(
+            0,
+            """
+                iget v0, p0, LX/WKI;->${'$'}t:I
+                const/16 v1, 0x7f
+                if-ne v0, v1, :froggo_story_download_stock_callback
+                new-instance v0, Ljava/lang/Thread;
+                invoke-direct {v0, p0}, Ljava/lang/Thread;-><init>(Ljava/lang/Runnable;)V
+                invoke-virtual {v0}, Ljava/lang/Thread;->start()V
+                return-void
+                :froggo_story_download_stock_callback
+            """.trimIndent(),
+        )
+
+        val callbackClass = menuClass
+        callbackClass.interfaces.removeAll { it == "Ljava/lang/Runnable;" }
+        callbackClass.interfaces.add("Ljava/lang/Runnable;")
+        callbackClass.interfaces.removeAll { it == "Lkotlin/jvm/functions/Function1;" }
+        callbackClass.interfaces.add("Lkotlin/jvm/functions/Function1;")
+        callbackClass.interfaces.removeAll { it == "Landroid/content/DialogInterface${'$'}OnClickListener;" }
+        callbackClass.interfaces.add("Landroid/content/DialogInterface${'$'}OnClickListener;")
+
+        callbackClass.fields.add(
+            ImmutableField(
+                callbackClass.type, "froggoDownloadButton", "Landroid/view/View;",
+                AccessFlags.PUBLIC.value or AccessFlags.STATIC.value,
+                null, NO_ANNOTATIONS, NO_HIDDEN_API,
+            ).toMutableField(),
+        )
+        callbackClass.fields.add(
+            ImmutableField(
+                callbackClass.type, "froggoDownloadButtonTint", "Landroid/content/res/ColorStateList;",
+                AccessFlags.PUBLIC.value or AccessFlags.STATIC.value,
+                null, NO_ANNOTATIONS, NO_HIDDEN_API,
+            ).toMutableField(),
+        )
+        callbackClass.fields.add(
+            ImmutableField(
+                callbackClass.type, "froggoDownloadSpinner", "Landroid/widget/ProgressBar;",
+                AccessFlags.PUBLIC.value or AccessFlags.STATIC.value,
+                null, NO_ANNOTATIONS, NO_HIDDEN_API,
+            ).toMutableField(),
+        )
+
+        // -------------------------------------------------------------------
+        // Static DownloadManager helper methods on LX/WKI.
+        // -------------------------------------------------------------------
+        val enqueueHelper = ImmutableMethod(
+            callbackClass.type, "froggoEnqueue",
+            listOf(
+                ImmutableMethodParameter("Landroid/content/Context;", null, null),
+                ImmutableMethodParameter("Ljava/lang/String;", null, null),
+                ImmutableMethodParameter("Ljava/lang/String;", null, null),
+                ImmutableMethodParameter("Ljava/lang/String;", null, null),
+                ImmutableMethodParameter("Ljava/lang/String;", null, null),
+                ImmutableMethodParameter("Ljava/lang/String;", null, null),
+            ),
+            "V",
+            AccessFlags.PUBLIC.value or AccessFlags.STATIC.value,
+            null, null, MutableMethodImplementation(12),
+        ).toMutable().apply {
+            addInstructions(0, """
                 const-string v0, "download"
                 invoke-virtual {p0, v0}, Landroid/content/Context;->getSystemService(Ljava/lang/String;)Ljava/lang/Object;
                 move-result-object v0
@@ -141,236 +319,35 @@ private fun buildFroggoDownloaderClass(): ImmutableClassDef {
                 invoke-virtual {v0, v2}, Landroid/app/DownloadManager;->enqueue(Landroid/app/DownloadManager${'$'}Request;)J
 
                 return-void
-            """.trimIndent(),
-        )
-    }
+            """.trimIndent())
+        }
+        callbackClass.methods.add(enqueueHelper)
 
-    val enqueueShort = ImmutableMethod(
-        DOWNLOADER_TYPE,
-        "enqueueShort",
-        listOf(
-            ImmutableMethodParameter("Landroid/content/Context;", null, null),
-            ImmutableMethodParameter("Ljava/lang/String;", null, null),
-            ImmutableMethodParameter("Ljava/lang/String;", null, null),
-        ),
-        "V",
-        AccessFlags.PUBLIC.value or AccessFlags.STATIC.value,
-        null,
-        null,
-        MutableMethodImplementation(8),
-    ).toMutable().apply {
-        addInstructions(
-            0,
-            """
+        val enqueueShortHelper = ImmutableMethod(
+            callbackClass.type, "froggoEnqueueShort",
+            listOf(
+                ImmutableMethodParameter("Landroid/content/Context;", null, null),
+                ImmutableMethodParameter("Ljava/lang/String;", null, null),
+                ImmutableMethodParameter("Ljava/lang/String;", null, null),
+            ),
+            "V",
+            AccessFlags.PUBLIC.value or AccessFlags.STATIC.value,
+            null, null, MutableMethodImplementation(8),
+        ).toMutable().apply {
+            addInstructions(0, """
                 move-object v0, p0
                 move-object v1, p1
                 move-object v2, p2
                 const-string v3, "video/mp4"
                 const-string v4, "Movies"
                 const-string v5, "FroggoPatches/Facebook"
-                invoke-static/range {v0 .. v5}, Lcom/froggo/patches/FroggoDownloader;->enqueue(Landroid/content/Context;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
+                invoke-static/range {v0 .. v5}, LX/WKI;->froggoEnqueue(Landroid/content/Context;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
                 return-void
-            """.trimIndent(),
-        )
-    }
-
-    return ImmutableClassDef(
-        DOWNLOADER_TYPE,
-        AccessFlags.PUBLIC.value or AccessFlags.FINAL.value,
-        "Ljava/lang/Object;",
-        emptyList(),
-        "FroggoDownloader.java",
-        emptyList(),
-        emptyList(),
-        emptyList(),
-        listOf(enqueue, enqueueShort),
-        emptyList(),
-    )
-}
-
-@Suppress("unused")
-val downloadFacebookMedia573Patch = bytecodePatch(
-    name = "Download Facebook Media (573)",
-    description = "Native DownloadManager-backed downloads for Stories, Feed and Reels.",
-    default = true,
-) {
-    compatibleWith(COMPATIBILITY_FACEBOOK_573)
-
-    val imageFolderOption = stringOption(
-        key = "facebookImageFolder",
-        default = "Pictures/FroggoPatches/Facebook/@",
-        values = mapOf("Pictures/FroggoPatches/Facebook/@" to "Pictures/FroggoPatches/Facebook/@"),
-        title = "Facebook image folder",
-        description = "Relative MediaStore folder prefix. The creator name is appended after @.",
-        required = true,
-    ) { it != null && it.startsWith("Pictures/") && it.endsWith("@") && ".." !in it }
-
-    val videoFolderOption = stringOption(
-        key = "facebookVideoFolder",
-        default = "FroggoPatches/Facebook/@",
-        values = mapOf("Movies/FroggoPatches/Facebook/@" to "FroggoPatches/Facebook/@"),
-        title = "Facebook video folder",
-        description = "Folder below Movies. The creator name is appended after @.",
-        required = true,
-    ) { it != null && !it.startsWith("/") && it.endsWith("@") && ".." !in it }
-
-    execute {
-        val imagePathPrefix = imageFolderOption.value!!
-        val videoPathPrefix = videoFolderOption.value!!
-        val storyDirectActionHash = -2013570421
-
-        context.bytecodeContext.classes.add(buildFroggoDownloaderClass())
-
-        val menuClass = menuCallback.resolve(context)?.classDef
-            ?: error("menuCallback (LX/WKI;->Dtf) did not match in FB 573")
-        val videoClass = videoSaveCallback.resolve(context)?.classDef
-            ?: error("videoSaveCallback (LX/bq4;->onClick) did not match in FB 573")
-        val headerClass = storyHeader.resolve(context)?.classDef
-            ?: error("storyHeader (LX/9Uw;->A1K) did not match in FB 573")
-        val headerCbClass = storyHeaderCallback.resolve(context)?.classDef
-            ?: error("storyHeaderCallback (LX/9Uw;->A1O) did not match in FB 573")
-
-        menuCallback.method.implementation!!.apply {
-            if (registerCount < 4) registerCount = 4
+            """.trimIndent())
         }
-        storyHeaderCallback.method.implementation!!.apply {
-            if (registerCount < 4) registerCount = 4
-        }
+        callbackClass.methods.add(enqueueShortHelper)
 
-        val storyDirectButtonHelper = ImmutableMethod(
-            headerClass.type,
-            "froggoCreateStoryDownloadButton",
-            listOf(
-                ImmutableMethodParameter("LX/3QZ;", null, null),
-                ImmutableMethodParameter("Z", null, null),
-            ),
-            "LX/4hG;",
-            AccessFlags.PUBLIC.value or AccessFlags.STATIC.value,
-            null,
-            null,
-            MutableMethodImplementation(16),
-        ).toMutable().apply {
-            addInstructions(
-                0,
-                """
-                    invoke-static {p0}, LX/4hG;->A00(LX/3QZ;)LX/4hH;
-                    move-result-object v0
-                    const/high16 v1, 0x41c00000
-                    invoke-virtual {v0, v1}, LX/4hH;->A1j(F)V
-                    invoke-virtual {v0, v1}, LX/4hH;->A1X(F)V
-                    const/4 v1, 0x0
-                    invoke-virtual {v0, v1}, LX/4hH;->A1W(F)V
-                    invoke-static {v0}, LX/9Di;->A1X(LX/Nqn;)V
-                    sget-object v1, Lcom/facebook/fds/core/theme/component/FDSColors;->A00:Lcom/facebook/fds/core/theme/component/FDSColors;
-                    if-eqz p1, :froggo_story_download_button_light
-                    sget-object v2, LX/1y5;->A09:LX/1y5;
-                    goto :froggo_story_download_button_color_ready
-                    :froggo_story_download_button_light
-                    sget-object v2, LX/1y5;->A4C:LX/1y5;
-                    :froggo_story_download_button_color_ready
-                    invoke-virtual {v1, v2, p0}, Lcom/facebook/fds/core/theme/component/FDSColors;->A02(LX/1y5;LX/3QZ;)I
-                    move-result v1
-                    invoke-virtual {v0, v1}, LX/4hH;->A32(I)V
-                    sget v1, Lcom/facebook/katana/R${'$'}drawable${'$'}3;->fb_ic_download_24:I
-                    invoke-virtual {v0, v1}, LX/4hH;->A35(I)V
-                    move-object v6, v0
-                    move-object v0, p0
-                    sget-object v1, LX/1K7;->A03:LX/1K7;
-                    const-class v2, ${headerClass.type}
-                    const-string v3, "ExpandedMediaFeedHeaderComponent"
-                    const/4 v4, 0x0
-                    const v5, $storyDirectActionHash
-                    invoke-virtual/range {v0 .. v5}, LX/3QZ;->A07(LX/1K7;Ljava/lang/Class;Ljava/lang/String;[Ljava/lang/Object;I)LX/X6V;
-                    move-result-object v1
-                    move-object v0, v6
-                    invoke-virtual {v0, v1}, LX/4hH;->A2C(LX/X6V;)V
-                    sget-object v1, LX/2PU;->A04:LX/2PU;
-                    invoke-virtual {v0, v1}, LX/Nqn;->A2T(LX/2PU;)V
-                    invoke-virtual {v0}, LX/Nqn;->A1O()V
-                    iget-object v0, v0, LX/4hH;->A00:LX/4hG;
-                    return-object v0
-                """.trimIndent(),
-            )
-        }
-        headerClass.methods.add(storyDirectButtonHelper)
-
-        storyHeaderCallback.method.addInstructions(
-            0,
-            """
-                iget v0, p1, LX/X6V;->A01:I
-                const v1, $storyDirectActionHash
-                if-ne v0, v1, :froggo_story_header_stock_callback
-
-                instance-of v0, p2, LX/1MP;
-                if-eqz v0, :froggo_story_header_touch_done
-
-                move-object v0, p2
-                check-cast v0, LX/1MP;
-                invoke-virtual {v0}, LX/1MP;->A00()Landroid/view/View;
-                move-result-object v0
-
-                iget-object v1, p1, LX/X6V;->A00:LX/1K9;
-                iget-object v1, v1, LX/1K9;->A00:LX/3QZ;
-                invoke-static {v1}, LX/41t;->A0O(LX/3QZ;)Ljava/lang/Object;
-                move-result-object v1
-                check-cast v1, LX/9VC;
-                iget-object v1, v1, LX/9VC;->A00:Lcom/facebook/stories/viewer/ui/buckets/regular/topbar/menu/StoryViewerMoreButtonCallback;
-                invoke-static {v1, v0}, LX/WKI;->froggoChooseStoryDownload(Lcom/facebook/stories/viewer/ui/buckets/regular/topbar/menu/StoryViewerMoreButtonCallback;Landroid/view/View;)V
-                const/4 v0, 0x0
-                return-object v0
-
-                :froggo_story_header_touch_done
-                sget-object v0, LX/0FI;->A00:LX/0FI;
-                return-object v0
-
-                :froggo_story_header_stock_callback
-            """.trimIndent(),
-        )
-
-        menuCallback.method.addInstructions(
-            0,
-            """
-                iget v0, p0, LX/WKI;->${'$'}t:I
-                const/16 v1, 0x7f
-                if-ne v0, v1, :froggo_story_download_stock_callback
-                new-instance v0, Ljava/lang/Thread;
-                invoke-direct {v0, p0}, Ljava/lang/Thread;-><init>(Ljava/lang/Runnable;)V
-                invoke-virtual {v0}, Ljava/lang/Thread;->start()V
-                return-void
-                :froggo_story_download_stock_callback
-            """.trimIndent(),
-        )
-
-        val callbackClass = menuClass
-        callbackClass.interfaces.removeAll { it == "Ljava/lang/Runnable;" }
-        callbackClass.interfaces.add("Ljava/lang/Runnable;")
-        callbackClass.interfaces.removeAll { it == "Lkotlin/jvm/functions/Function1;" }
-        callbackClass.interfaces.add("Lkotlin/jvm/functions/Function1;")
-        callbackClass.interfaces.removeAll { it == "Landroid/content/DialogInterface${'$'}OnClickListener;" }
-        callbackClass.interfaces.add("Landroid/content/DialogInterface${'$'}OnClickListener;")
-
-        callbackClass.fields.add(
-            ImmutableField(
-                callbackClass.type, "froggoDownloadButton", "Landroid/view/View;",
-                AccessFlags.PUBLIC.value or AccessFlags.STATIC.value,
-                null, emptySet(), emptySet(),
-            ).toMutableField(),
-        )
-        callbackClass.fields.add(
-            ImmutableField(
-                callbackClass.type, "froggoDownloadButtonTint", "Landroid/content/res/ColorStateList;",
-                AccessFlags.PUBLIC.value or AccessFlags.STATIC.value,
-                null, emptySet(), emptySet(),
-            ).toMutableField(),
-        )
-        callbackClass.fields.add(
-            ImmutableField(
-                callbackClass.type, "froggoDownloadSpinner", "Landroid/widget/ProgressBar;",
-                AccessFlags.PUBLIC.value or AccessFlags.STATIC.value,
-                null, emptySet(), emptySet(),
-            ).toMutableField(),
-        )
-
+        // --- toast helper ---
         callbackClass.methods.add(
             ImmutableMethod(
                 callbackClass.type, "froggoPostToast",
@@ -458,32 +435,26 @@ val downloadFacebookMedia573Patch = bytecodePatch(
                     instance-of v1, v0, LX/1LV;
                     if-nez v1, :froggo_capture_button_touch
                     goto :froggo_capture_button_done
-
                     :froggo_capture_button_direct
                     check-cast v0, Landroid/view/View;
                     goto :froggo_capture_button_store
-
                     :froggo_capture_button_click
                     check-cast v0, LX/1MP;
                     invoke-virtual {v0}, LX/1MP;->A00()Landroid/view/View;
                     move-result-object v0
                     goto :froggo_capture_button_store
-
                     :froggo_capture_button_pressed
                     check-cast v0, LX/43B;
                     invoke-virtual {v0}, LX/43B;->A00()Landroid/view/View;
                     move-result-object v0
                     goto :froggo_capture_button_store
-
                     :froggo_capture_button_touch
                     check-cast v0, LX/1LV;
                     invoke-virtual {v0}, LX/1LV;->A01()Landroid/view/View;
                     move-result-object v0
-
                     :froggo_capture_button_store
                     if-eqz v0, :froggo_capture_button_done
                     sput-object v0, LX/WKI;->froggoDownloadButton:Landroid/view/View;
-
                     :froggo_capture_button_done
                     return-void
                     .catch Ljava/lang/Throwable; {:froggo_capture_button_try .. :froggo_capture_button_done} :froggo_capture_button_catch
@@ -546,12 +517,10 @@ val downloadFacebookMedia573Patch = bytecodePatch(
                     sput-object v1, LX/WKI;->froggoDownloadSpinner:Landroid/widget/ProgressBar;
                     :froggo_feedback_start_no_spinner_host
                     goto :froggo_feedback_start_done
-
                     :froggo_feedback_start_no_view
                     const-string v1, "FroggoPatches"
                     const-string v2, "feedback-start-no-view"
                     invoke-static {v1, v2}, Landroid/util/Log;->w(Ljava/lang/String;Ljava/lang/String;)I
-
                     :froggo_feedback_start_done
                     return-void
                     .catch Ljava/lang/Throwable; {:froggo_feedback_start_try .. :froggo_feedback_start_done} :froggo_feedback_start_catch
@@ -665,6 +634,9 @@ val downloadFacebookMedia573Patch = bytecodePatch(
             }
         )
 
+        // -------------------------------------------------------------------
+        // Story workers.
+        // -------------------------------------------------------------------
         callbackClass.methods.add(
             ImmutableMethod(
                 callbackClass.type, "froggoRunStoryDownload",
@@ -678,7 +650,6 @@ val downloadFacebookMedia573Patch = bytecodePatch(
                     check-cast v0, Lcom/facebook/stories/viewer/ui/buckets/regular/topbar/menu/StoryViewerMoreButtonCallback;
 
                     iget-object v1, v0, Lcom/facebook/stories/viewer/ui/buckets/regular/topbar/menu/StoryViewerMoreButtonCallback;->A09:Landroid/content/Context;
-                    iget-object v2, v0, Lcom/facebook/stories/viewer/ui/buckets/regular/topbar/menu/StoryViewerMoreButtonCallback;->A02:Lcom/facebook/stories/model/StoryCard;
 
                     # TODO: replace with real video URL getter on StoryCard v573
                     const-string v3, ""
@@ -722,7 +693,7 @@ val downloadFacebookMedia573Patch = bytecodePatch(
                     const-string v3, "video/mp4"
                     const-string v4, "Movies"
                     move-object v5, v6
-                    invoke-static/range {v0 .. v5}, Lcom/froggo/patches/FroggoDownloader;->enqueue(Landroid/content/Context;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
+                    invoke-static/range {v0 .. v5}, LX/WKI;->froggoEnqueue(Landroid/content/Context;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
 
                     const/4 v0, 0x1
                     invoke-static {v0}, LX/WKI;->froggoShowDownloadFeedbackResult(Z)V
@@ -786,7 +757,7 @@ val downloadFacebookMedia573Patch = bytecodePatch(
                     const-string v3, "image/jpeg"
                     const-string v4, "Pictures"
                     move-object v5, v6
-                    invoke-static/range {v0 .. v5}, Lcom/froggo/patches/FroggoDownloader;->enqueue(Landroid/content/Context;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
+                    invoke-static/range {v0 .. v5}, LX/WKI;->froggoEnqueue(Landroid/content/Context;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
 
                     const/4 v0, 0x1
                     invoke-static {v0}, LX/WKI;->froggoShowDownloadFeedbackResult(Z)V
@@ -795,6 +766,9 @@ val downloadFacebookMedia573Patch = bytecodePatch(
             }
         )
 
+        // -------------------------------------------------------------------
+        // LX/WKI.run — dispatcher.
+        // -------------------------------------------------------------------
         callbackClass.methods.add(
             ImmutableMethod(
                 callbackClass.type, "run",
@@ -842,7 +816,6 @@ val downloadFacebookMedia573Patch = bytecodePatch(
                     invoke-virtual {v0, v1}, Landroid/view/View;->setAlpha(F)V
                     const/4 v1, 0x1
                     invoke-virtual {v0, v1}, Landroid/view/View;->setEnabled(Z)V
-
                     iget-object v1, p0, LX/WKI;->A00:Ljava/lang/Object;
                     check-cast v1, Ljava/lang/Boolean;
                     invoke-virtual {v1}, Ljava/lang/Boolean;->booleanValue()Z
@@ -858,7 +831,6 @@ val downloadFacebookMedia573Patch = bytecodePatch(
                     invoke-static {v2}, Landroid/content/res/ColorStateList;->valueOf(I)Landroid/content/res/ColorStateList;
                     move-result-object v2
                     invoke-virtual {v0, v2}, Landroid/view/View;->setBackgroundTintList(Landroid/content/res/ColorStateList;)V
-
                     new-instance v2, Landroid/view/animation/AlphaAnimation;
                     const v3, 0x3e99999a
                     const/high16 v4, 0x3f800000
@@ -866,7 +838,6 @@ val downloadFacebookMedia573Patch = bytecodePatch(
                     const-wide/16 v3, 0xdc
                     invoke-virtual {v2, v3, v4}, Landroid/view/animation/Animation;->setDuration(J)V
                     invoke-virtual {v0, v2}, Landroid/view/View;->startAnimation(Landroid/view/animation/Animation;)V
-
                     new-instance v2, Landroid/os/Handler;
                     invoke-static {}, Landroid/os/Looper;->getMainLooper()Landroid/os/Looper;
                     move-result-object v3
@@ -880,7 +851,6 @@ val downloadFacebookMedia573Patch = bytecodePatch(
                     const-wide/16 v4, 0x384
                     invoke-virtual {v2, v3, v4, v5}, Landroid/os/Handler;->postDelayed(Ljava/lang/Runnable;J)Z
                     goto :froggo_download_dispatch_end
-
                     :froggo_download_button_cleanup
                     iget-object v0, p0, LX/WKI;->A00:Ljava/lang/Object;
                     instance-of v1, v0, Landroid/view/View;
@@ -985,6 +955,9 @@ val downloadFacebookMedia573Patch = bytecodePatch(
             }
         )
 
+        // -------------------------------------------------------------------
+        // Reels / Feed: hook native Save video.
+        // -------------------------------------------------------------------
         val videoCallbackClass = videoClass
         videoCallbackClass.interfaces.removeAll { it == "Ljava/lang/Runnable;" }
         videoCallbackClass.interfaces.add("Ljava/lang/Runnable;")
@@ -1027,7 +1000,7 @@ val downloadFacebookMedia573Patch = bytecodePatch(
                     invoke-virtual {v3}, Ljava/lang/StringBuilder;->toString()Ljava/lang/String;
                     move-result-object v3
 
-                    invoke-static {v0, v1, v3}, Lcom/froggo/patches/FroggoDownloader;->enqueueShort(Landroid/content/Context;Ljava/lang/String;Ljava/lang/String;)V
+                    invoke-static {v0, v1, v3}, LX/WKI;->froggoEnqueueShort(Landroid/content/Context;Ljava/lang/String;Ljava/lang/String;)V
 
                     const/4 v0, 0x1
                     invoke-static {v0}, LX/WKI;->froggoShowDownloadFeedbackResult(Z)V
