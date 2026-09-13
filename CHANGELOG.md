@@ -1,3 +1,10 @@
+## [1.0.7](https://github.com/anemia004/xD-MorphePatches/compare/v1.0.6...v1.0.7) (2026-09-13)
+
+### 🐛 Bug Fixes
+
+* resolve smali parser syntax error and restore reel button ([57de528](https://github.com/anemia004/xD-MorphePatches/commit/57de528cf850ed2ba861d71cbdcb2e1f077f08a9))
+* resolve smali parser syntax error and restore reel button ([890e434](https://github.com/anemia004/xD-MorphePatches/commit/890e4345ff818c935f6b992199dd83dcab92b624))
+
 ## [1.0.6](https://github.com/anemia004/xD-MorphePatches/compare/v1.0.5...v1.0.6) (2026-09-13)
 
 ### 🐛 Bug Fixes
