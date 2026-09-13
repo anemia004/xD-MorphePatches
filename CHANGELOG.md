@@ -1,3 +1,9 @@
+## [1.0.9](https://github.com/anemia004/xD-MorphePatches/compare/v1.0.8...v1.0.9) (2026-09-13)
+
+### 🐛 Bug Fixes
+
+* resolve line 1228 inline smali parser syntax error in reels sidebar hook ([6d81d67](https://github.com/anemia004/xD-MorphePatches/commit/6d81d676a47a4dc37275a29dae3c3276539ce16f))
+
 ## [1.0.8](https://github.com/anemia004/xD-MorphePatches/compare/v1.0.7...v1.0.8) (2026-09-13)
 
 ### 🐛 Bug Fixes
