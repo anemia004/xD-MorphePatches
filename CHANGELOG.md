@@ -1,3 +1,10 @@
+## [1.0.6](https://github.com/anemia004/xD-MorphePatches/compare/v1.0.5...v1.0.6) (2026-09-13)
+
+### 🐛 Bug Fixes
+
+* complete reels sidebar button injection with corrected download smali ([ea19ef3](https://github.com/anemia004/xD-MorphePatches/commit/ea19ef386ca01a32314a49aff3600986af6f0b37))
+* complete reels sidebar button injection with corrected download smali ([3f3fa1e](https://github.com/anemia004/xD-MorphePatches/commit/3f3fa1e0875407a16166681779e968611b58a0bd))
+
 ## [1.0.5](https://github.com/anemia004/xD-MorphePatches/compare/v1.0.4...v1.0.5) (2026-09-13)
 
 ### 🐛 Bug Fixes
