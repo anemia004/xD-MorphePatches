@@ -508,6 +508,10 @@ internal fun storyFirstFrameWorkerInstructions(imagePathPrefix: String) = """
     goto :froggo_story_frame_fail
 """.trimIndent()
 
+/**
+ * Feed-video worker.
+ * Builds DownloadManager.Request inline. No helper method on LX/WKI.
+ */
 internal val compactVideoDownloadWorkerInstructions = """
     move-object v1, p0
     iget-object v1, v1, LX/bq4;->A01:LX/b1P;
@@ -516,8 +520,6 @@ internal val compactVideoDownloadWorkerInstructions = """
     const-string v10, "FroggoPatches"
     const-string v11, "worker-start"
     invoke-static {v10, v11}, Landroid/util/Log;->d(Ljava/lang/String;Ljava/lang/String;)I
-    const-string v12, "🐸 Descarga iniciada"
-    invoke-static {v0, v12}, LX/WKI;->froggoPostToast(Landroid/content/Context;Ljava/lang/CharSequence;)V
 
     :froggo_video_download_try_start
     iget-object v2, v1, LX/a8s;->A0B:Lcom/facebook/video/engine/api/VideoPlayerParams;
@@ -526,9 +528,6 @@ internal val compactVideoDownloadWorkerInstructions = """
     if-eqz v3, :froggo_video_download_fail
     iget-object v4, v3, Lcom/facebook/video/engine/api/VideoDataSource;->A08:Landroid/net/Uri;
     if-eqz v4, :froggo_video_download_fail
-    const-string v10, "FroggoPatches"
-    const-string v11, "uri-ready"
-    invoke-static {v10, v11}, Landroid/util/Log;->d(Ljava/lang/String;Ljava/lang/String;)I
 
     invoke-virtual {v4}, Landroid/net/Uri;->getScheme()Ljava/lang/String;
     move-result-object v5
@@ -543,9 +542,6 @@ internal val compactVideoDownloadWorkerInstructions = """
     if-eqz v7, :froggo_video_download_fail
 
     :froggo_video_download_url_ok
-    const-string v10, "FroggoPatches"
-    const-string v11, "before-author"
-    invoke-static {v10, v11}, Landroid/util/Log;->d(Ljava/lang/String;Ljava/lang/String;)I
     const-string v12, "unknown"
     iget-object v10, v1, LX/a8S;->A04:LX/4ta;
     invoke-static {v10}, LX/2lw;->A05(LX/4ta;)Lcom/facebook/graphql/model/GraphQLMedia;
@@ -628,33 +624,55 @@ internal val compactVideoDownloadWorkerInstructions = """
     const-string v12, "unknown"
 
     :froggo_video_download_author_sanitized
-    new-instance v13, Ljava/lang/StringBuilder;
-    invoke-direct {v13}, Ljava/lang/StringBuilder;-><init>()V
+    new-instance v6, Ljava/lang/StringBuilder;
+    invoke-direct {v6}, Ljava/lang/StringBuilder;-><init>()V
     const-string v10, "FB_video_"
-    invoke-virtual {v13, v10}, Ljava/lang/StringBuilder;->append(Ljava/lang/String;)Ljava/lang/StringBuilder;
-    invoke-virtual {v13, v12}, Ljava/lang/StringBuilder;->append(Ljava/lang/String;)Ljava/lang/StringBuilder;
+    invoke-virtual {v6, v10}, Ljava/lang/StringBuilder;->append(Ljava/lang/String;)Ljava/lang/StringBuilder;
+    invoke-virtual {v6, v12}, Ljava/lang/StringBuilder;->append(Ljava/lang/String;)Ljava/lang/StringBuilder;
     const-string v10, "_"
-    invoke-virtual {v13, v10}, Ljava/lang/StringBuilder;->append(Ljava/lang/String;)Ljava/lang/StringBuilder;
+    invoke-virtual {v6, v10}, Ljava/lang/StringBuilder;->append(Ljava/lang/String;)Ljava/lang/StringBuilder;
     invoke-static {}, Ljava/lang/System;->currentTimeMillis()J
     move-result-wide v10
-    invoke-virtual {v13, v10, v11}, Ljava/lang/StringBuilder;->append(J)Ljava/lang/StringBuilder;
+    invoke-virtual {v6, v10, v11}, Ljava/lang/StringBuilder;->append(J)Ljava/lang/StringBuilder;
     const-string v10, ".mp4"
-    invoke-virtual {v13, v10}, Ljava/lang/StringBuilder;->append(Ljava/lang/String;)Ljava/lang/StringBuilder;
-    invoke-virtual {v13}, Ljava/lang/StringBuilder;->toString()Ljava/lang/String;
-    move-result-object v13
+    invoke-virtual {v6, v10}, Ljava/lang/StringBuilder;->append(Ljava/lang/String;)Ljava/lang/StringBuilder;
+    invoke-virtual {v6}, Ljava/lang/StringBuilder;->toString()Ljava/lang/String;
+    move-result-object v6
 
-    invoke-virtual {v4}, Landroid/net/Uri;->toString()Ljava/lang/String;
-    move-result-object v14
+    const-string v7, "download"
+    invoke-virtual {v0, v7}, Landroid/content/Context;->getSystemService(Ljava/lang/String;)Ljava/lang/Object;
+    move-result-object v7
+    check-cast v7, Landroid/app/DownloadManager;
 
-    move-object v1, v14
-    move-object v2, v13
-    const-string v3, "video/mp4"
-    const-string v4, "Movies"
-    const-string v5, "FroggoPatches/Facebook"
-    invoke-static/range {v0 .. v5}, LX/WKI;->froggoEnqueue(Landroid/content/Context;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
+    new-instance v8, Landroid/app/DownloadManager${'$'}Request;
+    invoke-direct {v8, v4}, Landroid/app/DownloadManager${'$'}Request;-><init>(Landroid/net/Uri;)V
+    invoke-virtual {v8, v6}, Landroid/app/DownloadManager${'$'}Request;->setTitle(Ljava/lang/CharSequence;)Landroid/app/DownloadManager${'$'}Request;
+    move-result-object v8
+    const/4 v9, 0x1
+    invoke-virtual {v8, v9}, Landroid/app/DownloadManager${'$'}Request;->setNotificationVisibility(I)Landroid/app/DownloadManager${'$'}Request;
+    move-result-object v8
+    const-string v9, "User-Agent"
+    const-string v10, "Mozilla/5.0"
+    invoke-virtual {v8, v9, v10}, Landroid/app/DownloadManager${'$'}Request;->addRequestHeader(Ljava/lang/String;Ljava/lang/String;)Landroid/app/DownloadManager${'$'}Request;
+    move-result-object v8
 
-    const/4 v5, 0x1
-    invoke-static {v5}, LX/WKI;->froggoShowDownloadFeedbackResult(Z)V
+    new-instance v9, Ljava/lang/StringBuilder;
+    invoke-direct {v9}, Ljava/lang/StringBuilder;-><init>()V
+    const-string v10, "FroggoPatches/Facebook/"
+    invoke-virtual {v9, v10}, Ljava/lang/StringBuilder;->append(Ljava/lang/String;)Ljava/lang/StringBuilder;
+    invoke-virtual {v9, v6}, Ljava/lang/StringBuilder;->append(Ljava/lang/String;)Ljava/lang/StringBuilder;
+    invoke-virtual {v9}, Ljava/lang/StringBuilder;->toString()Ljava/lang/String;
+    move-result-object v9
+
+    sget-object v10, Landroid/os/Environment;->DIRECTORY_MOVIES:Ljava/lang/String;
+    invoke-virtual {v8, v10, v9}, Landroid/app/DownloadManager${'$'}Request;->setDestinationInExternalPublicDir(Ljava/lang/String;Ljava/lang/String;)Landroid/app/DownloadManager${'$'}Request;
+    move-result-object v8
+
+    invoke-virtual {v7, v8}, Landroid/app/DownloadManager;->enqueue(Landroid/app/DownloadManager${'$'}Request;)J
+    move-result-wide v9
+
+    const/4 v10, 0x1
+    invoke-static {v10}, LX/WKI;->froggoShowDownloadFeedbackResult(Z)V
     goto :froggo_video_download_finish
 
     :froggo_video_download_finish
@@ -665,8 +683,8 @@ internal val compactVideoDownloadWorkerInstructions = """
     const-string v10, "FroggoPatches"
     const-string v11, "video download failed"
     invoke-static {v10, v11}, Landroid/util/Log;->e(Ljava/lang/String;Ljava/lang/String;)I
-    const/4 v5, 0x0
-    invoke-static {v5}, LX/WKI;->froggoShowDownloadFeedbackResult(Z)V
+    const/4 v10, 0x0
+    invoke-static {v10}, LX/WKI;->froggoShowDownloadFeedbackResult(Z)V
     goto :froggo_video_download_finish
 
     :froggo_video_download_catch
@@ -677,6 +695,11 @@ internal val compactVideoDownloadWorkerInstructions = """
     goto :froggo_video_download_fail
 """.trimIndent()
 
+/**
+ * Reels worker.
+ * Builds DownloadManager.Request inline. No helper method on LX/WKI.
+ * No polling loop — the DownloadManager notification is the feedback.
+ */
 internal fun compactReelDownloadWorkerInstructions(videoPathPrefix: String) = """
     move-object v1, p0
     iget-object v1, v1, LX/WKI;->A00:Ljava/lang/Object;
@@ -746,15 +769,37 @@ internal fun compactReelDownloadWorkerInstructions(videoPathPrefix: String) = ""
     invoke-virtual {v13}, Ljava/lang/StringBuilder;->toString()Ljava/lang/String;
     move-result-object v13
 
-    invoke-virtual {v4}, Landroid/net/Uri;->toString()Ljava/lang/String;
-    move-result-object v14
+    const-string v7, "download"
+    invoke-virtual {v0, v7}, Landroid/content/Context;->getSystemService(Ljava/lang/String;)Ljava/lang/Object;
+    move-result-object v7
+    check-cast v7, Landroid/app/DownloadManager;
 
-    move-object v1, v14
-    move-object v2, v13
-    const-string v3, "video/mp4"
-    const-string v4, "Movies"
-    const-string v5, "FroggoPatches/Facebook"
-    invoke-static/range {v0 .. v5}, LX/WKI;->froggoEnqueue(Landroid/content/Context;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
+    new-instance v8, Landroid/app/DownloadManager${'$'}Request;
+    invoke-direct {v8, v4}, Landroid/app/DownloadManager${'$'}Request;-><init>(Landroid/net/Uri;)V
+    invoke-virtual {v8, v13}, Landroid/app/DownloadManager${'$'}Request;->setTitle(Ljava/lang/CharSequence;)Landroid/app/DownloadManager${'$'}Request;
+    move-result-object v8
+    const/4 v9, 0x1
+    invoke-virtual {v8, v9}, Landroid/app/DownloadManager${'$'}Request;->setNotificationVisibility(I)Landroid/app/DownloadManager${'$'}Request;
+    move-result-object v8
+    const-string v9, "User-Agent"
+    const-string v10, "Mozilla/5.0"
+    invoke-virtual {v8, v9, v10}, Landroid/app/DownloadManager${'$'}Request;->addRequestHeader(Ljava/lang/String;Ljava/lang/String;)Landroid/app/DownloadManager${'$'}Request;
+    move-result-object v8
+
+    new-instance v9, Ljava/lang/StringBuilder;
+    invoke-direct {v9}, Ljava/lang/StringBuilder;-><init>()V
+    const-string v10, "FroggoPatches/Facebook/"
+    invoke-virtual {v9, v10}, Ljava/lang/StringBuilder;->append(Ljava/lang/String;)Ljava/lang/StringBuilder;
+    invoke-virtual {v9, v13}, Ljava/lang/StringBuilder;->append(Ljava/lang/String;)Ljava/lang/StringBuilder;
+    invoke-virtual {v9}, Ljava/lang/StringBuilder;->toString()Ljava/lang/String;
+    move-result-object v9
+
+    sget-object v10, Landroid/os/Environment;->DIRECTORY_MOVIES:Ljava/lang/String;
+    invoke-virtual {v8, v10, v9}, Landroid/app/DownloadManager${'$'}Request;->setDestinationInExternalPublicDir(Ljava/lang/String;Ljava/lang/String;)Landroid/app/DownloadManager${'$'}Request;
+    move-result-object v8
+
+    invoke-virtual {v7, v8}, Landroid/app/DownloadManager;->enqueue(Landroid/app/DownloadManager${'$'}Request;)J
+    move-result-wide v9
 
     const/4 v15, 0x1
     invoke-static {v15}, LX/WKI;->froggoShowDownloadFeedbackResult(Z)V
@@ -780,9 +825,5 @@ internal fun compactReelDownloadWorkerInstructions(videoPathPrefix: String) = ""
     const-string v2, "FroggoPatches"
     const-string v3, "reel DownloadManager exception"
     invoke-static {v2, v3, v1}, Landroid/util/Log;->e(Ljava/lang/String;Ljava/lang/String;Ljava/lang/Throwable;)I
-    const/4 v15, 0x0
-    invoke-static {v15}, LX/WKI;->froggoShowDownloadFeedbackResult(Z)V
-    const-string v1, "🐸 No se pudo descargar el Reel"
-    invoke-static {v0, v1}, LX/WKI;->froggoPostToast(Landroid/content/Context;Ljava/lang/CharSequence;)V
-    return-void
+    goto :froggo_reel_dm_fail
 """.trimIndent()
