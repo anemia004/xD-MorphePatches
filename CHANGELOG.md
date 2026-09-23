@@ -1,3 +1,9 @@
+## [1.0.16](https://github.com/anemia004/xD-MorphePatches/compare/v1.0.15...v1.0.16) (2026-09-23)
+
+### 🐛 Bug Fixes
+
+* Facebook573MediaDownloadFingerprints.kt ([60ebcb8](https://github.com/anemia004/xD-MorphePatches/commit/60ebcb888c2dea6481b29e1ab9dc8a7171b34d17))
+
 ## [1.0.15](https://github.com/anemia004/xD-MorphePatches/compare/v1.0.14...v1.0.15) (2026-09-13)
 
 ### 🐛 Bug Fixes
